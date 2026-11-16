@@ -7,6 +7,7 @@
 - [ ] Le site s'ouvre sans message d'erreur, en mode sombre, avec l'indicateur « Mode local ».
 - [ ] Sur ordinateur, la barre latérale est visible. Sur téléphone, la navigation est en bas de l'écran et rien ne dépasse en largeur.
 - [ ] Réglages > Mode clair : l'affichage change. Après rechargement de la page, le choix est conservé.
+- [ ] Réglages > Verre dépoli désactivé : les panneaux redeviennent des cadres à coins coupés, sans flou. Le choix est conservé après rechargement.
 - [ ] Réglages > Animations désactivées : plus aucun mouvement. Le choix est conservé après rechargement.
 - [ ] Réglages > Effets lumineux désactivés : les halos disparaissent. Le choix est conservé après rechargement.
 

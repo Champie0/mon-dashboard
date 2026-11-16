@@ -16,7 +16,7 @@ Dashboard personnel : tâches, habitudes, objectifs, finances et journal.
 | Finances | Dépenses et revenus saisis à la main, plusieurs comptes, import de relevé CSV, catégories et règles, budgets, abonnements détectés |
 | Journal | Humeur de 1 à 5, question du jour, notes, calendrier, recherche, courbe d'humeur |
 | Rappels | Date, heure, répétition quotidienne ou hebdomadaire, notification du navigateur |
-| Réglages | Mode clair, animations, effets lumineux, sauvegarde, listes de phrases et de questions, devise |
+| Réglages | Mode clair, verre dépoli, animations, effets lumineux, sauvegarde, listes de phrases et de questions, devise |
 
 Tout tient dans un seul fichier, `index.html`, sans installation. Aucune connexion bancaire, aucun appel vers un service financier.
 
@@ -108,7 +108,7 @@ Faute d'indication, ces choix ont été faits. Ils sont tous modifiables.
 - **Polices** : IM Fell English (titres) et Chakra Petch (données) sont chargées depuis Google Fonts si le réseau le permet. Sinon, des polices déjà présentes sur l'appareil prennent le relais.
 - **Peinture de fond** : c'est un paysage dessiné dans le fichier lui-même (SVG), pour ne dépendre d'aucune image externe.
 - **Notifications** : elles s'affichent tant que le dashboard est ouvert dans un onglet. Sur certains téléphones, le navigateur les refuse ; les rappels apparaissent alors dans l'Accueil.
-- **Réglages d'affichage** (mode clair, animations, effets lumineux) : mémorisés par appareil, pas par compte, puisqu'ils dépendent de la puissance de chaque machine.
+- **Réglages d'affichage** (mode clair, verre dépoli, animations, effets lumineux) : mémorisés par appareil, pas par compte, puisqu'ils dépendent de la puissance de chaque machine.
 - **Virements entre comptes** : à saisir comme une dépense sur un compte et un revenu sur l'autre.
 
 ## Organisation des données
