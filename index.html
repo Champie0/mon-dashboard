@@ -439,6 +439,122 @@ h1.gilt{animation:sheen 7s linear infinite alternate}
   :root.glass .main{padding-bottom:110px}
   :root.glass #toasts{bottom:96px}
 }
+
+/* =====================================================================
+   RAFFINEMENT VISUEL v2
+   Même identité (crépuscule violet, or, serif, verre dépoli), mais :
+   une couleur d'accent par module, des panneaux plus profonds et plus
+   contrastés, un ciel étoilé discret, un accueil plus riche.
+   ===================================================================== */
+:root{--a-tasks:#f2c46d;--a-habits:#6fe3c1;--a-goals:#ff8fbf;--a-finance:#ffb36b;--a-journal:#b9a4ff;--a-reminders:#7cc4ff;--a-late:#ff7aa8;--accent:var(--electric)}
+:root.light{--a-tasks:#a2700b;--a-habits:#0d8a68;--a-goals:#c22e6f;--a-finance:#b5560c;--a-journal:#5b3fd1;--a-reminders:#1769b3}
+body[data-view=taches]{--accent:var(--a-tasks)} body[data-view=habitudes]{--accent:var(--a-habits)} body[data-view=objectifs]{--accent:var(--a-goals)}
+body[data-view=finances]{--accent:var(--a-finance)} body[data-view=journal]{--accent:var(--a-journal)} body[data-view=rappels]{--accent:var(--a-reminders)}
+[data-m=tasks]{--accent:var(--a-tasks)} [data-m=habits]{--accent:var(--a-habits)} [data-m=finance]{--accent:var(--a-finance)} [data-m=reminders]{--accent:var(--a-reminders)} [data-m=late]{--accent:var(--a-late)}
+
+/* Ciel : étoiles discrètes au-dessus de l'horizon */
+.scene::after{content:"";position:absolute;inset:0 0 40% 0;pointer-events:none;opacity:.75;
+  background-image:radial-gradient(1.2px 1.2px at 12% 18%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 27% 8%,#fff 50%,transparent 51%),radial-gradient(1.4px 1.4px at 41% 26%,#fde9c0 50%,transparent 51%),radial-gradient(1px 1px at 58% 12%,#fff 50%,transparent 51%),radial-gradient(1.2px 1.2px at 71% 31%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 84% 9%,#e9dcff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 93% 22%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 6% 36%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 35% 40%,#e9dcff 50%,transparent 51%),radial-gradient(1.2px 1.2px at 64% 44%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 19% 50%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 79% 52%,#fde9c0 50%,transparent 51%);
+  animation:twinkle 5.5s ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:.35}to{opacity:.85}}
+:root.light .scene::after{display:none}
+
+/* Titre de section : numéro en petites capitales, filet doré plus fin */
+.secno{text-transform:uppercase;font-size:.7rem;letter-spacing:.18em;color:var(--accent)}
+h1{font-size:clamp(2.1rem,4.4vw,3rem);letter-spacing:-.005em}
+.top::after{width:72px;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+
+/* Panneaux en verre : plus profonds, bord lumineux plus net */
+:root.glass{--g-bg:linear-gradient(155deg,rgba(255,255,255,.12),rgba(255,255,255,.025) 38%,rgba(255,255,255,0) 60%),rgba(20,10,38,.58);
+  --g-hi:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(255,255,255,.05),inset 0 0 0 1px rgba(255,255,255,.04)}
+:root.glass .hud{border-radius:22px;border-color:rgba(255,255,255,.16)}
+:root.glass .hud::before{background:radial-gradient(90% 55% at 8% 0,rgba(255,255,255,.14),transparent 62%)!important}
+:root.glass .hud[data-m]{border-top-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+:root.glass:not(.no-glow) .hud{box-shadow:var(--g-hi),0 18px 50px -18px rgba(4,1,12,.75),0 0 0 .5px rgba(255,255,255,.04)}
+:root.glass:not(.no-glow) .hud:hover,:root.glass:not(.no-glow) .hud:focus-within{box-shadow:var(--g-hi),0 22px 60px -18px rgba(4,1,12,.8),0 0 24px -8px color-mix(in srgb,var(--accent) 70%,transparent)}
+
+/* Titres de panneau : pastille d'accent du module */
+.hud h2{font-size:1.32rem}
+body[data-view] .hud h2::before,.hud[data-m] h2::before{content:"";width:9px;height:9px;border-radius:3px;flex:none;align-self:center;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+body[data-view=accueil] .hud:not([data-m]) h2::before,body[data-view=reglages] .hud h2::before{display:none}
+.hud h2 .tag{color:var(--accent);font-weight:600}
+:root:not(.no-glow) .hud h2{text-shadow:none}
+:root:not(.no-glow) .secno,:root:not(.no-glow) .tag{text-shadow:none}
+
+/* Accueil : bandeau d'indicateurs */
+:root.glass .hud.hero{background:radial-gradient(70% 120% at 0% 50%,rgba(243,223,160,.13),transparent 60%),radial-gradient(60% 90% at 100% 0%,rgba(192,139,255,.18),transparent 70%),var(--g-bg)}
+.hello{font-size:clamp(2rem,4vw,2.8rem)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
+.kpi{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.05);color:var(--text);position:relative;overflow:hidden;transition:background .15s,border-color .15s,transform .15s}
+.kpi::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+.kpi span{font-size:.72rem;color:var(--muted);letter-spacing:.02em}
+.kpi b{font-size:1.25rem;line-height:1.15;white-space:nowrap}
+.kpi b small{font-size:.8rem;color:var(--muted);font-weight:500}
+.kpi:hover{background:rgba(255,255,255,.09);border-color:color-mix(in srgb,var(--accent) 60%,transparent);transform:translateY(-1px)}
+.kpi.alert b{color:var(--a-late)}
+:root:not(.glass) .kpi{border-radius:0;clip-path:var(--cut-s);border-color:var(--line)}
+:root.light .kpi{background:rgba(255,255,255,.55);border-color:rgba(90,50,160,.14)}
+
+/* Barre latérale : marque, onglet actif doré, carte « Aujourd'hui » */
+.brand .gilt{font-size:1.6rem}
+:root.glass .nb{margin:1px 0;padding-top:10px;padding-bottom:10px;position:relative}
+:root.glass .nb[aria-current=page]{background:linear-gradient(100deg,rgba(255,255,255,.16),rgba(255,255,255,.04));color:var(--text)}
+:root.glass .nb[aria-current=page]::before{content:"";position:absolute;left:3px;top:9px;bottom:9px;width:3px;border-radius:3px;background:linear-gradient(var(--gold2),var(--gold))}
+.nb[aria-current=page] svg{color:var(--gold2)}
+:root.light .nb[aria-current=page] svg{color:var(--gold)}
+.side-foot{border-top:0;padding:10px 0 0}
+.today-card{display:flex;align-items:center;gap:10px;width:100%;padding:10px;margin-bottom:10px;text-align:left;color:var(--text);border:1px solid rgba(255,255,255,.14);border-radius:16px;background:linear-gradient(140deg,rgba(255,255,255,.1),rgba(255,255,255,.02))}
+.today-card:hover{border-color:rgba(243,223,160,.5)}
+.today-card b{display:block;font-family:var(--serif);font-weight:400;font-size:1.05rem;line-height:1.1}
+.today-card small{font-size:.74rem;color:var(--muted)}
+.today-card .gauge>span{font-size:.7rem}
+.today-card .ring .ar{stroke:var(--gold2)}
+:root:not(.glass) .today-card{border-radius:0;clip-path:var(--cut-s);border-color:var(--line)}
+.side-help{padding:0 6px;font-size:.74rem;color:var(--muted)}
+
+/* Boutons : primaire plus chaud et plus net */
+:root.glass .btn.primary,:root.glass.light .btn.primary{background:linear-gradient(180deg,#b98bff 0%,#8c4bf2 55%,#7434dc 100%);border-color:rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 6px 18px -6px rgba(124,58,237,.8)}
+:root.glass .btn.primary:hover{filter:brightness(1.08)}
+:root.glass .btn{font-weight:500}
+
+/* Habitudes : cases plus lisibles, aujourd'hui bien marqué */
+:root.glass .cell{border-radius:7px;font-size:.68rem;border-color:rgba(255,255,255,.14)}
+.cell.now{outline:2px solid var(--gold2);outline-offset:1px}
+.stats b{font-size:1.3rem}
+:root.glass .hab-ic{border-color:color-mix(in srgb,var(--hc) 70%,transparent);background:color-mix(in srgb,var(--hc) 16%,transparent)}
+
+/* Finances : une couleur par catégorie */
+.cat-row:nth-child(7n+1) .bar:not(.over):not(.warn)>i{background:linear-gradient(90deg,#f2c46d,#ffe3a3)}
+.cat-row:nth-child(7n+2) .bar:not(.over):not(.warn)>i{background:linear-gradient(90deg,#6fe3c1,#b4f5e2)}
+.cat-row:nth-child(7n+3) .bar:not(.over):not(.warn)>i{background:linear-gradient(90deg,#b98bff,#dcc6ff)}
+.cat-row:nth-child(7n+4) .bar:not(.over):not(.warn)>i{background:linear-gradient(90deg,#7cc4ff,#c2e3ff)}
+.cat-row:nth-child(7n+5) .bar:not(.over):not(.warn)>i{background:linear-gradient(90deg,#ff8fbf,#ffc6dd)}
+.cat-row:nth-child(7n+6) .bar:not(.over):not(.warn)>i{background:linear-gradient(90deg,#ffb36b,#ffd7b0)}
+.cat-row:nth-child(7n+7) .bar:not(.over):not(.warn)>i{background:linear-gradient(90deg,#a7b4c9,#dbe2ee)}
+:root:not(.no-glow) .cat-row .bar>i{box-shadow:none}
+.amt.pos{color:var(--a-habits)}
+
+/* Courbes : trait doré-lavande, aire plus douce */
+.chart .ln{stroke:var(--accent)}
+.chart .ar{fill:var(--accent);opacity:.12}
+
+/* Puces de priorité et retards plus lisibles */
+:root.glass .chip{background:rgba(255,255,255,.05)}
+:root.glass .chip.late{background:var(--late);color:#24030f}
+
+/* Mode clair : plus net, moins délavé */
+:root.light{--text:#1d0f33;--muted:#5a4778}
+:root.glass.light{--g-bg:linear-gradient(155deg,rgba(255,255,255,.88),rgba(255,255,255,.62) 50%,rgba(244,236,255,.7));--veil:linear-gradient(180deg,rgba(245,239,252,.72),rgba(245,239,252,.55) 45%,rgba(245,239,252,.8))}
+:root.glass.light .hud{border-color:rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff,0 14px 40px -16px rgba(70,30,130,.28)}
+:root.glass.light .today-card,:root.glass.light .kpi{border-color:rgba(90,50,160,.14)}
+
+@media (max-width:820px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .kpi{align-items:center;text-align:center}
+  .kpi::before{left:50%;top:auto;bottom:0;width:28px;height:3px;transform:translateX(-50%);border-radius:3px 3px 0 0}
+  .side-foot{display:none}
+  :root.glass .nb[aria-current=page]::before{left:50%;top:2px;bottom:auto;width:22px;height:3px;transform:translateX(-50%)}
+}
 </style>
 </head>
 <body>
@@ -1022,7 +1138,9 @@ window.addEventListener('hashchange', () => {
 function renderNav() {
   const t0 = today(), late = S.tasks.items.filter(t => !t.done && t.due && t.due < t0).length;
   $('#nav').innerHTML = SECTIONS.map(s => `<button class="nb" data-a="go" data-id="${s.id}"${s.id === cur ? ' aria-current="page"' : ''} title="${s.label} (touche ${+s.no})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${s.icon}"/></svg><span class="no">${s.no}</span><span class="lb">${s.label}</span>${s.id === 'taches' && late ? `<span class="badge" aria-label="${plural(late, 'tâche en retard', 'tâches en retard')}">${late}</span>` : ''}</button>`).join('');
-  $('#sidefoot').innerHTML = `Aide et raccourcis : touche <kbd>?</kbd>`;
+  const st = dayStats();
+  $('#sidefoot').innerHTML = `<button class="today-card" data-a="go" data-id="accueil" title="Voir l’accueil">${ring(st.pct, 44, 4, 'Avancement de la journée : ' + st.pct + ' %')}<span><b>Aujourd’hui</b><small>${st.total ? `${st.td + st.hd} sur ${st.total} fait${st.td + st.hd > 1 ? 's' : ''}` : 'Rien de prévu'}</small></span></button>
+  <p class="side-help">Aide et raccourcis : touche <kbd>?</kbd></p>`;
 }
 function renderNotices() {
   let h = '';
@@ -1035,6 +1153,7 @@ function render() {
   pendingRender = false;
   const sec = SECTIONS.find(s => s.id === cur), v = $('#view');
   try { renderNav(); renderNotices(); } catch (e) { console.error(e); }
+  document.body.dataset.view = cur;
   $('#secno').textContent = 'Section ' + sec.no; $('#sectitle').textContent = sec.label;
   document.title = sec.label + ' · Mon dashboard';
   try { v.innerHTML = VIEWS[cur](); }
@@ -1147,21 +1266,28 @@ VIEWS.accueil = () => {
       <p class="quote">${esc(quote)}</p>
       <div class="row"><button class="btn sm ghost" data-a="quoteNext">Autre phrase</button>
       <span class="muted small">${st.total ? `${plural(st.td, 'tâche terminée', 'tâches terminées')} sur ${st.tt} · ${plural(st.hd, 'habitude faite', 'habitudes faites')} sur ${st.ht}` : 'Rien de prévu pour l’instant : choisissez vos priorités.'}</span></div>
+    
+      <div class="kpis">
+        <button class="kpi" data-m="tasks" data-a="go" data-id="taches"><span>Tâches du jour</span><b class="num">${st.td}<small> / ${st.tt}</small></b></button>
+        <button class="kpi" data-m="habits" data-a="go" data-id="habitudes"><span>Habitudes</span><b class="num">${st.hd}<small> / ${st.ht}</small></b></button>
+        <button class="kpi${open.some(t => t.due && t.due < t0) ? ' alert' : ''}" data-m="late" data-a="go" data-id="taches"><span>En retard</span><b class="num">${open.filter(t => t.due && t.due < t0).length}</b></button>
+        <button class="kpi" data-m="finance" data-a="go" data-id="finances"><span>Solde estimé</span><b class="num">${money(f.total)}</b></button>
+      </div>
     </div>
   </section>
   <div class="grid gh">
-    <section class="hud"><h2>Priorités du jour <span class="tag">${top.filter(t => t.done).length}/${top.length || 3}</span><span class="sp"></span><button class="btn sm" data-a="topPick">Choisir</button></h2>
+    <section class="hud" data-m="tasks"><h2>Priorités du jour <span class="tag">${top.filter(t => t.done).length}/${top.length || 3}</span><span class="sp"></span><button class="btn sm" data-a="topPick">Choisir</button></h2>
       ${top.length ? `<ul class="list">${top.map(t => taskRow(t, t0, true)).join('')}</ul>` : empty('Trois priorités, pas plus', open.length ? 'Choisissez les tâches qui comptent le plus aujourd’hui.' : 'Ajoutez d’abord une tâche, puis choisissez vos priorités.', open.length ? '' : '<button class="btn" data-a="taskNew">Ajouter une tâche</button>')}
     </section>
-    <section class="hud"><h2>Habitudes du jour <span class="tag">${st.hd}/${st.ht}</span></h2>
+    <section class="hud" data-m="habits"><h2>Habitudes du jour <span class="tag">${st.hd}/${st.ht}</span></h2>
       ${habits.length ? habits.map(h => habitLine(h, t0)).join('') : empty('Aucune habitude prévue aujourd’hui', S.habits.items.length ? 'Profitez-en.' : 'Créez une habitude pour la suivre jour après jour.', S.habits.items.length ? '' : '<button class="btn" data-a="habitNew">Créer une habitude</button>')}
     </section>
-    <section class="hud"><h2>Finances</h2>
+    <section class="hud" data-m="finance"><h2>Finances</h2>
       <div class="kv"><span>Solde estimé</span><b class="num glow">${money(f.total)}</b></div>
       <div class="kv"><span>Dépenses de ${esc(monthLabel(t0.slice(0, 7)))}</span><b class="num">${money(f.sc)}</b></div>
       <div class="kv"><span>Revenus de ${esc(monthLabel(t0.slice(0, 7)))}</span><b class="num">${money(f.inc)}</b></div>
     </section>
-    <section class="hud"><h2>Échéances et rappels</h2>
+    <section class="hud" data-m="reminders"><h2>Échéances et rappels</h2>
       ${pend.map(r => `<div class="kv"><span><span class="chip warn">À voir</span> ${esc(r.title)} <span class="muted small">(${esc(fmtAt(r.pending))})</span></span><button class="btn sm" data-a="remAck" data-id="${A(r.id)}">Vu</button></div>`).join('')}
       ${dl.map(x => `<div class="kv"><span>${x.d < t0 ? '<span class="chip late">En retard</span> ' : ''}${esc(x.l)} <span class="muted small">(${x.k})</span></span><span class="muted" style="white-space:nowrap">${esc(relDay(x.d))}</span></div>`).join('')}
       ${next.map(r => `<div class="kv"><span>🔔 ${esc(r.title)}</span><span class="muted" style="white-space:nowrap">${esc(fmtAt(r.at))}</span></div>`).join('')}
