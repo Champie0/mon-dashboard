@@ -1,0 +1,32 @@
+# Dépendances et constructions
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+
+# Journaux
+*.log
+npm-debug.log*
+
+# Secrets et configuration locale : ne jamais les publier
+.env
+.env.*
+*.pem
+*.key
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+.firebase/
+.firebaserc
+firebase-debug.log
+
+# Sauvegardes personnelles exportées depuis le dashboard (données réelles)
+mon-dashboard-*.json
+*.csv
+
+# Système et éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
