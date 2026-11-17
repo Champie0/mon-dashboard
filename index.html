@@ -1815,7 +1815,7 @@ const sw = (k, on, label, help) => `<button class="sw" role="switch" aria-checke
    aux tâches, objectifs, habitudes et rappels qu'après validation.
    ===================================================================== */
 const AI_PROVIDERS = {
-  openrouter: { label: 'OpenRouter (modèles « :free » gratuits)', model: 'meta-llama/llama-3.3-70b-instruct:free', link: 'https://openrouter.ai/keys' }
+  openrouter: { label: 'OpenRouter (modèles « :free » gratuits)', model: '', link: 'https://openrouter.ai/keys' }
 };
 const aiCfg = () => {
   const c = ls.get('ai', {}) || {};
@@ -1859,28 +1859,50 @@ function aiSystem() {
   ].join('\n') + ctx;
 }
 
+let aiFree = null;
+/** Modèles gratuits disponibles maintenant chez OpenRouter (liste publique, sans clé). Les plus adaptés d'abord. */
+async function aiFreeModels() {
+  if (aiFree) return aiFree;
+  const r = await fetch('https://openrouter.ai/api/v1/models');
+  const j = await r.json().catch(() => ({}));
+  const free = arr(j.data).filter(m => isObj(m) && /:free$/.test(str(m.id)) && num(m.pricing && m.pricing.prompt, 1) === 0 && num(m.pricing && m.pricing.completion, 1) === 0
+    && !/-vl\b|vision|embed|moderat|\b[0-3](\.[0-9])?b\b/i.test(m.id) && (!m.architecture || !m.architecture.output_modalities || arr(m.architecture.output_modalities).includes('text')));
+  const score = m => (arr(m.supported_parameters).some(x => x === 'structured_outputs' || x === 'response_format') ? 2 : 0) + (arr(m.supported_parameters).includes('max_tokens') ? 1 : 0);
+  free.sort((x, y) => score(y) - score(x) || num(y.context_length) - num(x.context_length));
+  aiFree = free.map(m => m.id).slice(0, 6);
+  if (!aiFree.length) { aiFree = null; throw new Error('Aucun modèle gratuit disponible chez OpenRouter pour le moment. Réessayez plus tard.'); }
+  return aiFree;
+}
+async function aiOne(model, c, msgs, system, signal) {
+  const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST', signal, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + c.key },
+    body: JSON.stringify({ model, max_tokens: 8192, messages: [{ role: 'system', content: system }, ...msgs.map(m => ({ role: m.role, content: m.text }))] })
+  });
+  const j = await r.json().catch(() => ({}));
+  const m = j && j.error && (j.error.message || (typeof j.error === 'string' ? j.error : '')) || '';
+  if (!r.ok) { const e = new Error(r.status === 401 || r.status === 403 ? 'Clé refusée par OpenRouter. Vérifiez-la (et sa limite de crédit) dans la configuration.' + (m ? ' (' + str(m, 160) + ')' : '')
+    : r.status === 429 ? 'Quota gratuit atteint pour ce modèle.' : (m ? str(m, 240) : 'Erreur ' + r.status + ' du fournisseur.')); e.status = r.status; throw e; }
+  const out = str(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content, 40000);
+  if (!out.trim()) { const e = new Error('Réponse vide du modèle.'); e.status = 502; throw e; }
+  return out;
+}
 async function aiCall(msgs, system) {
-  const c = aiCfg(), model = c.model || AI_PROVIDERS[c.provider].model;
-  if (!/:free$/.test(model)) throw new Error('Modèle refusé : seuls les modèles gratuits (nom finissant par « :free ») sont autorisés, pour éviter tout coût.');
-  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 90000);
-  let url, body, headers = { 'Content-Type': 'application/json' };
-  url = 'https://openrouter.ai/api/v1/chat/completions';
-  headers.Authorization = 'Bearer ' + c.key;
-  body = { model, max_tokens: 8192, messages: [{ role: 'system', content: system }, ...msgs.map(m => ({ role: m.role, content: m.text }))] };
+  const c = aiCfg(), ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 120000);
   try {
-    const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      const m = j && j.error && (j.error.message || (typeof j.error === 'string' ? j.error : '')) || '';
-      throw new Error(r.status === 401 || r.status === 403 ? 'Clé refusée par le fournisseur. Vérifiez-la dans la configuration.' + (m ? ' (' + str(m, 160) + ')' : '')
-        : r.status === 429 ? 'Quota atteint chez le fournisseur : réessayez dans un moment.' : (m ? str(m, 240) : 'Erreur ' + r.status + ' du fournisseur.'));
+    if (c.model && !/:free$/.test(c.model)) throw new Error('Modèle refusé : seuls les modèles gratuits (nom finissant par « :free ») sont autorisés, pour éviter tout coût.');
+    const list = [...new Set([c.model, ...await aiFreeModels()].filter(Boolean))].slice(0, 4);
+    let last;
+    for (const model of list) {
+      try { return await aiOne(model, c, msgs, system, ctl.signal); }
+      catch (e) {
+        last = e;
+        if (e.status === 401 || e.status === 403 || e.name === 'AbortError' || e instanceof TypeError) throw e;   // clé refusée, délai ou réseau : inutile d'essayer un autre modèle
+      }
     }
-    const out = str(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content, 40000);
-    if (!out.trim()) throw new Error('Réponse vide du modèle. Reformulez ou réessayez.');
-    return out;
+    throw last || new Error('Aucun modèle gratuit n’a répondu.');
   } catch (e) {
     if (e.name === 'AbortError') throw new Error('Le fournisseur met trop de temps à répondre. Réessayez.');
-    if (e instanceof TypeError) throw new Error('Impossible de joindre le fournisseur (connexion ou blocage du navigateur).');
+    if (e instanceof TypeError) throw new Error('Impossible de joindre OpenRouter (connexion ou blocage du navigateur).');
     throw e;
   } finally { clearTimeout(to); }
 }
@@ -1990,12 +2012,12 @@ ACT.aiConf = () => {
     <label class="f"><span>Fournisseur</span><select name="provider" data-c="aiProv">${Object.entries(AI_PROVIDERS).map(([k, v]) => `<option value="${k}"${k === c.provider ? ' selected' : ''}>${esc(v.label)}</option>`).join('')}</select></label>
     <label class="f"><span>Clé API</span><input type="password" name="key" autocomplete="off" spellcheck="false" value="${esc(c.key)}" placeholder="Collez votre clé"></label>
     <p class="small" style="margin:-4px 0 12px"><a id="ailink" href="${AI_PROVIDERS[c.provider].link}" target="_blank" rel="noopener noreferrer">Obtenir une clé chez ce fournisseur</a></p>
-    <label class="f"><span>Modèle (laisser vide pour le modèle par défaut)</span><input type="text" name="model" maxlength="100" value="${esc(c.model)}" placeholder="${esc(AI_PROVIDERS[c.provider].model)}"></label>
+    <label class="f"><span>Modèle (laisser vide : choix automatique d’un modèle gratuit)</span><input type="text" name="model" maxlength="100" value="${esc(c.model)}" placeholder="Automatique : un modèle gratuit disponible"></label>
     <div class="checks" style="margin-bottom:12px"><label><input type="checkbox" name="ctx"${c.ctx ? ' checked' : ''}>Partager le titre de mes tâches en cours avec l’IA, pour éviter les conflits</label></div>
     <p class="err" hidden></p>
     <div class="row end"><button type="button" class="btn ghost" data-a="dlgClose">Annuler</button>${c.key ? '<button type="button" class="btn danger" data-a="aiKeyDel">Supprimer la clé</button>' : ''}<button class="btn primary">Enregistrer</button></div></form>`);
 };
-CH.aiProv = (d, t) => { const p = AI_PROVIDERS[t.value]; if (!p) return; $('#ailink').href = p.link; t.form.elements.model.placeholder = p.model; };
+CH.aiProv = (d, t) => { const p = AI_PROVIDERS[t.value]; if (!p) return; $('#ailink').href = p.link;  };
 SUB.aiConfSave = form => {
   const f = form.elements, key = f.key.value.trim(), err = $('.err', form);
   if (!key) { err.textContent = 'Collez une clé API.'; err.hidden = false; return; }
