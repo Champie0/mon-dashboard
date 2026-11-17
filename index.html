@@ -824,7 +824,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '2.4.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '2.4.1', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -946,7 +946,9 @@ const docText = h => { const d = document.createElement('div'); d.innerHTML = h;
 const NORMALIZE = {
   home(r) {
     const d = DEFAULTS.home(), q = lines(r.quotes, 300);
-    return { v: 1, quotes: q.length ? q : d.quotes, top: arr(r.top).filter(x => typeof x === 'string').slice(0, 3), firstUse: validD(r.firstUse) ? r.firstUse : d.firstUse, lastExport: validD(r.lastExport) ? r.lastExport : null };
+    return { v: 1, quotes: q.length ? q : d.quotes, top: arr(r.top).filter(x => typeof x === 'string').slice(0, 3), firstUse: validD(r.firstUse) ? r.firstUse : d.firstUse, lastExport: validD(r.lastExport) ? r.lastExport : null,
+      /* Réglages d'affichage et lien musique : suivent le compte, pour survivre à un effacement des données du navigateur. */
+      prefs: isObj(r.prefs) ? { theme: r.prefs.theme === 'light' ? 'light' : 'dark', anim: r.prefs.anim !== false, glow: r.prefs.glow !== false, glass: r.prefs.glass !== false } : null, music: str(r.music, 300) };
   },
   tasks(r) {
     need(Array.isArray(r.items));
@@ -1390,8 +1392,15 @@ function renderNotices() {
   if (!exportSnooze && hasData(S) && diffDays(today(), last) > 30) h += `<div class="notice"><span class="grow">${S.home.lastExport ? 'Votre dernière sauvegarde date de plus de 30 jours.' : 'Vous n’avez pas encore fait de sauvegarde de vos données.'}</span><button class="btn sm" data-a="exportData">Exporter maintenant</button><button class="btn sm ghost" data-a="exportLater">Plus tard</button></div>`;
   $('#notices').innerHTML = h;
 }
+/** Reprend dans l'affichage les réglages enregistrés dans le compte (après une connexion ou une synchronisation). */
+function adoptHome() {
+  const hm = S.home; if (!hm) return;
+  if (hm.prefs && ['theme', 'anim', 'glow', 'glass'].some(k => prefs[k] !== hm.prefs[k])) { Object.assign(prefs, hm.prefs); ls.set('prefs', prefs); applyPrefs(); }
+  if (hm.music && hm.music !== ls.get('music', '')) { ls.set('music', hm.music); if (typeof renderMusic === 'function') { try { renderMusic(); } catch (e) { } } }
+}
 function render() {
   pendingRender = false;
+  try { adoptHome(); } catch (e) { }
   const sec = SECTIONS.find(s => s.id === cur), v = $('#view');
   try { renderNav(); renderNotices(); } catch (e) { console.error(e); }
   document.body.dataset.view = cur;
@@ -2815,7 +2824,7 @@ VIEWS.reglages = () => {
   <section class="hud"><h2>Aide</h2><p class="small" style="margin-bottom:10px">Le dashboard se pilote aussi au clavier.</p><button class="btn" data-a="help">Voir les raccourcis clavier</button></section>
   <section class="hud"><h2>Tout effacer</h2><p class="small" style="margin-bottom:10px">Supprime toutes les données ${session ? 'de votre compte' : 'de ce navigateur'}. Faites un export avant.</p><button class="btn danger" data-a="wipe">Effacer toutes mes données</button></section></div>`;
 };
-ACT.pref = d => { if (d.k === 'theme') prefs.theme = prefs.theme === 'light' ? 'dark' : 'light'; else prefs[d.k] = !prefs[d.k]; ls.set('prefs', prefs); applyPrefs(); render(); };
+ACT.pref = d => { if (d.k === 'theme') prefs.theme = prefs.theme === 'light' ? 'dark' : 'light'; else prefs[d.k] = !prefs[d.k]; ls.set('prefs', prefs); S.home.prefs = { theme: prefs.theme, anim: !!prefs.anim, glow: !!prefs.glow, glass: !!prefs.glass }; commit('home', { silent: true }); applyPrefs(); render(); };
 CH.cur = (d, el) => { S.finance.currency = el.value; commit('finance'); toast('Devise enregistrée.'); };
 SUB.saveLines = form => {
   const list = [...new Set($('textarea', form).value.split('\n').map(x => x.trim().slice(0, 300)).filter(Boolean))];
@@ -2927,6 +2936,7 @@ const MUSIC_SUGG = [['Lofi Beats', 'https://open.spotify.com/playlist/37i9dQZF1D
 /* Client ID de l'application Spotify « Mon dashboard » : public par conception (PKCE), donc sans risque dans le code. */
 const SP_CLIENT = '9417e9f3821e492495220c75d16f6d85';
 const spCid = () => ls.get('spclient', '') || SP_CLIENT;
+function spSaveMusic(u) { if (u) ls.set('music', u); else ls.del('music'); if (S.home && (S.home.music || '') !== u) { S.home.music = u; commit('home', { silent: true }); } }
 const SP = { st: null, at: 0, n: 0, busy: false };
 let musicOpen = false;
 const spRedirect = () => location.origin + location.pathname;
@@ -3036,14 +3046,14 @@ async function spCmd(method, path) {
   setTimeout(spPoll, 450);
 }
 ACT.musicToggle = () => { musicOpen = !musicOpen; renderMusic(); if (musicOpen) spPoll(); };
-ACT.musicPick = d => { ls.set('music', d.u); renderMusic(); };
-ACT.musicClear = () => { ls.del('music'); renderMusic(); };
+ACT.musicPick = d => { spSaveMusic(d.u); renderMusic(); };
+ACT.musicClear = () => { spSaveMusic(''); renderMusic(); };
 ACT.spLogin = () => spConnect();
 ACT.spPrev = () => spCmd('POST', '/me/player/previous');
 ACT.spNext = () => spCmd('POST', '/me/player/next');
 ACT.spToggle = () => spCmd('PUT', SP.st && SP.st.is_playing ? '/me/player/pause' : '/me/player/play');
 ACT.spOff = () => { ls.del('sp'); SP.st = null; renderMusic(); if ($('#homeMusic')) render(); toast('Spotify déconnecté de ce navigateur.'); };
-SUB.musicSet = f => { const v = f.elements.u.value.trim(); if (!spotifyEmbed(v)) return toast('Ce lien n’est pas un lien Spotify (open.spotify.com/playlist/…).'); ls.set('music', v); renderMusic(); };
+SUB.musicSet = f => { const v = f.elements.u.value.trim(); if (!spotifyEmbed(v)) return toast('Ce lien n’est pas un lien Spotify (open.spotify.com/playlist/…).'); spSaveMusic(v); renderMusic(); };
 SUB.spClient = f => { const v = f.elements.c.value.trim(); if (!/^[a-f0-9]{32}$/i.test(v)) return toast('Un Client ID Spotify fait 32 caractères (lettres a–f et chiffres).'); ls.set('spclient', v); spConnect(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && musicOpen && !$('#dlg').open) { musicOpen = false; renderMusic(); } });
 renderMusic(); spCallback();

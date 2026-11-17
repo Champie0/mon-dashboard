@@ -229,3 +229,9 @@ Un Client ID personnel reste possible dans « Utiliser ma propre application Spo
 
 Une carte « Musique » pleine largeur en bas de l'Accueil : la console verte en grand avec le titre en cours, l'artiste et l'appareil
 qui joue. Non connecté, elle propose « Connecter mon Spotify ». Le bouton ♪ du haut garde son panneau flottant.
+
+## Version 2.4.1 — réglages dans le compte
+
+Connecté avec GitHub, tes données (tâches, habitudes, objectifs, finances, journal, rappels, accueil) sont dans ton compte et reviennent après
+un effacement des données du navigateur (Ctrl+Maj+Suppr). Désormais le thème, les options d'affichage et le lien musique suivent aussi le compte.
+Restent propres à chaque appareil, volontairement : la clé OpenRouter et la connexion Spotify.
