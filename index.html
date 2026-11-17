@@ -642,6 +642,33 @@ dialog::backdrop{background:radial-gradient(60% 60% at 50% 40%,rgba(60,70,160,.2
 #music form input{flex:1;min-width:0;height:var(--h-md);font-size:var(--fs-sm)}
 #music .row{margin-top:var(--sp-2)}
 #music .sugg{display:flex;flex-wrap:wrap;gap:var(--sp-1);margin-top:var(--sp-2)}
+.sp-connect{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--fill-0)}
+.sp-connect summary{cursor:pointer;font-weight:620;font-size:var(--fs-sm)}
+.sp-connect ol{margin:var(--sp-2) 0 var(--sp-2) 18px;padding:0;list-style:decimal}
+.sp-connect ol li{margin-bottom:6px}
+.sp-connect ol input{margin-top:6px;height:40px;font-size:var(--fs-xs)}
+.sp-connect p{margin-top:var(--sp-2)}
+/* Console verte rétro : pochette cadrée, barre noire, trois grosses touches */
+.sp-dev{position:relative;padding:16px 16px 14px;border-radius:30px;color:#06210F;
+  background:linear-gradient(160deg,#35D768 0%,#1DB954 46%,#14943F 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.45),inset 0 -6px 12px rgba(0,60,20,.28),0 14px 30px -12px rgba(20,148,63,.6)}
+.sp-dev::before,.sp-dev::after{content:"";position:absolute;top:52%;width:10px;height:70px;border-radius:8px;background:linear-gradient(180deg,#14943F,#0F7A33);box-shadow:inset 0 2px 3px rgba(0,0,0,.25)}
+.sp-dev::before{left:-6px}.sp-dev::after{right:-6px}
+.sp-art{aspect-ratio:1;width:100%;border-radius:8px;background:#0B1F13;border:3px solid #0B1F13;overflow:hidden;display:grid;place-items:center;box-shadow:0 2px 0 rgba(255,255,255,.25)}
+.sp-art img{width:100%;height:100%;object-fit:cover;display:block}
+.sp-none{font-size:64px;color:#1DB954}
+.sp-info{margin:12px 2px 8px;min-height:38px}
+.sp-info b{display:block;font-size:var(--fs-md);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-info span{display:block;font-size:var(--fs-xs);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-bar{height:16px;border-radius:3px;background:#0F7A33;overflow:hidden;border:2px solid #06210F}
+.sp-bar i{display:block;height:100%;width:0;background:#06210F;transition:width 1s linear}
+.sp-ctl{display:flex;justify-content:space-around;align-items:center;margin-top:12px}
+.sp-ctl button{width:62px;height:52px;display:grid;place-items:center;border:0;border-radius:14px;background:transparent;color:#06210F;transition:transform var(--t-fast),background var(--t-fast)}
+.sp-ctl button:hover{background:rgba(255,255,255,.22);transform:translateY(-1px)}
+.sp-ctl button:active{transform:scale(.92);background:rgba(0,0,0,.14)}
+.sp-ctl button:focus-visible{outline:2px solid #06210F}
+#music .row{margin-top:var(--sp-2)}
+
 
 /* ---------- 7. Mouvement (désactivable dans Réglages) ---------- */
 @keyframes aurora{0%{transform:translate3d(-2%,-1%,0) rotate(0) scale(1)}50%{transform:translate3d(3%,2%,0) rotate(4deg) scale(1.06)}100%{transform:translate3d(-1%,3%,0) rotate(-3deg) scale(1.02)}}
@@ -712,6 +739,7 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
   .ai-in{bottom:calc(92px + env(safe-area-inset-bottom))}
   #music{right:12px;left:12px;width:auto;bottom:calc(92px + env(safe-area-inset-bottom))}
   #music iframe{height:232px}
+  .sp-art{max-width:240px;margin-inline:auto}
   .hud{padding:22px 20px}
   .hero{grid-template-columns:1fr;justify-items:center;text-align:center;padding:30px 22px}
   .hero>:not(div){order:0}
@@ -788,7 +816,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '2.2.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '2.3.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -2881,32 +2909,119 @@ ACT.gateLocal = () => doLogout();
 })();
 
 
-/* ---------- Musique : lecteur Spotify intégré (lien collé par l'utilisateur, gardé sur cet appareil) ---------- */
+/* ---------- Musique : Spotify ----------
+   Connexion directe depuis le navigateur (OAuth PKCE, sans serveur). Le Client ID et les jetons restent sur
+   cet appareil : ils ne sont ni synchronisés ni exportés. Le lecteur affiche et pilote la lecture en cours,
+   sur n'importe quel appareil du compte (téléphone, ordinateur…). Piloter la lecture demande Spotify Premium.
+   Sans connexion, un lien Spotify collé s'affiche dans le lecteur intégré. */
 const MUSIC_SUGG = [['Lofi Beats', 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn'], ['Deep Focus', 'https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ']];
+const SP = { st: null, at: 0, n: 0, busy: false };
 let musicOpen = false;
+const spRedirect = () => location.origin + location.pathname;
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 function spotifyEmbed(u) {
   u = String(u || '').trim();
   const m = u.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album|track|artist|episode|show)\/([A-Za-z0-9]+)/) || u.match(/^spotify:(playlist|album|track|artist|episode|show):([A-Za-z0-9]+)$/);
   return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0` : '';
 }
+async function spTokenCall(body) {
+  const r = await fetch('https://accounts.spotify.com/api/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(body) });
+  if (!r.ok) throw new Error('token ' + r.status);
+  return r.json();
+}
+function spStore(j, old) { ls.set('sp', { access: j.access_token, refresh: j.refresh_token || (old && old.refresh) || '', exp: Date.now() + (j.expires_in || 3600) * 1000 }); }
+async function spToken() {
+  const t = ls.get('sp', null); if (!t) return null;
+  if (Date.now() < t.exp - 30000) return t.access;
+  try { const j = await spTokenCall({ grant_type: 'refresh_token', refresh_token: t.refresh, client_id: ls.get('spclient', '') }); spStore(j, t); return j.access_token; }
+  catch (e) { ls.del('sp'); SP.st = null; renderMusic(); return null; }
+}
+async function spApi(method, path) {
+  const tk = await spToken(); if (!tk) return null;
+  try { return await fetch('https://api.spotify.com/v1' + path, { method, headers: { Authorization: 'Bearer ' + tk } }); } catch (e) { return null; }
+}
+async function spConnect() {
+  const id = ls.get('spclient', '');
+  if (!id) return toast('Collez d’abord votre Client ID Spotify.');
+  const v = b64u(crypto.getRandomValues(new Uint8Array(48))), s = b64u(crypto.getRandomValues(new Uint8Array(12)));
+  const ch = b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)));
+  ls.set('spv', v); ls.set('sps', s);
+  location.href = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({ client_id: id, response_type: 'code', redirect_uri: spRedirect(), code_challenge_method: 'S256', code_challenge: ch, state: s, scope: 'user-read-playback-state user-modify-playback-state' });
+}
+async function spCallback() {
+  const q = new URLSearchParams(location.search); if (!q.has('code') && !q.has('error')) return;
+  const code = q.get('code'), err = q.get('error'), okState = q.get('state') === ls.get('sps', ''), v = ls.get('spv', '');
+  history.replaceState(null, '', location.pathname + location.hash);
+  ls.del('spv'); ls.del('sps');
+  if (err || !code || !okState || !v) { if (err || code) toast('Connexion à Spotify annulée ou refusée.'); return; }
+  try { spStore(await spTokenCall({ grant_type: 'authorization_code', code, redirect_uri: spRedirect(), client_id: ls.get('spclient', ''), code_verifier: v })); musicOpen = true; toast('Spotify est connecté.'); renderMusic(); spPoll(); }
+  catch (e) { toast('Connexion à Spotify impossible : vérifiez le Client ID et l’adresse de redirection.'); }
+}
+const SPI = { prev: '<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M6 5h2.4v14H6zM20 5v14L9.5 12z"/></svg>', next: '<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M15.6 5H18v14h-2.4zM4 5l10.5 7L4 19z"/></svg>', play: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>', pause: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M6 4.5h4.4v15H6zM13.6 4.5H18v15h-4.4z"/></svg>' };
 function renderMusic() {
   const el = $('#music'); if (!el) return;
-  const url = ls.get('music', ''), src = spotifyEmbed(url);
   el.classList.toggle('open', musicOpen); el.setAttribute('aria-hidden', String(!musicOpen));
   $('#musicBtn').setAttribute('aria-pressed', String(musicOpen));
-  /* L'iframe n'est recréée que si le lien change : la musique continue quand on navigue. */
-  if (el.dataset.src === src && el.firstChild) return;
-  el.dataset.src = src;
-  el.innerHTML = `<h2>Musique</h2><form data-s="musicSet"><input type="text" name="u" placeholder="Collez un lien Spotify" aria-label="Lien Spotify" value="${A(url)}" autocomplete="off"><button class="btn sm primary" type="submit">OK</button></form>` +
-    (src ? `<iframe src="${A(src)}" title="Lecteur Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe><div class="row"><span class="small muted grow">Connecté à Spotify dans ce navigateur, la lecture est complète ; sinon, extraits de 30 s.</span><button class="btn sm ghost" data-a="musicClear" type="button">Retirer</button></div>`
-      : `<p class="small muted">Playlist, album ou titre : sur Spotify, Partager → Copier le lien, puis collez-le ici.</p><div class="sugg">${MUSIC_SUGG.map(([n, u2]) => `<button class="btn sm" type="button" data-a="musicPick" data-u="${A(u2)}">${esc(n)}</button>`).join('')}</div>`);
+  const connected = !!ls.get('sp', null), url = ls.get('music', ''), src = spotifyEmbed(url), cid = ls.get('spclient', '');
+  const key = connected ? 'c' : 'e|' + src + '|' + cid;
+  if (el.dataset.key === key && el.firstChild) return;   /* l'iframe ne bouge pas : la musique continue quand on navigue */
+  el.dataset.key = key;
+  if (connected) {
+    el.innerHTML = `<div class="sp-dev" role="group" aria-label="Lecteur Spotify">
+      <div class="sp-art"><img id="spArt" alt="" hidden><div id="spNone" class="sp-none">♪</div></div>
+      <div class="sp-info"><b id="spTitle">Chargement…</b><span id="spSub"></span></div>
+      <div class="sp-bar" aria-hidden="true"><i id="spBar"></i></div>
+      <div class="sp-ctl"><button data-a="spPrev" aria-label="Précédent">${SPI.prev}</button><button data-a="spToggle" id="spTog" aria-label="Lecture / pause">${SPI.play}</button><button data-a="spNext" aria-label="Suivant">${SPI.next}</button></div></div>
+      <div class="row"><span class="small muted grow" id="spDev"></span><button class="btn sm ghost" data-a="spOff" type="button">Déconnecter</button></div>`;
+    spPaint(); return;
+  }
+  el.innerHTML = `<h2>Musique</h2>
+    <details class="sp-connect"${cid ? '' : ' open'}><summary>Connecter mon compte Spotify</summary>
+      <ol class="small muted"><li>Sur <b>developer.spotify.com/dashboard</b>, créez une application.</li><li>Adresse de redirection à y saisir :<input type="text" readonly value="${A(spRedirect())}" aria-label="Adresse de redirection"></li><li>Collez ici son <b>Client ID</b> :</li></ol>
+      <form data-s="spClient"><input type="text" name="c" placeholder="Client ID" aria-label="Client ID Spotify" value="${A(cid)}" autocomplete="off"><button class="btn sm primary" type="submit">Connecter</button></form>
+      <p class="small muted">Piloter la lecture demande Spotify Premium.</p></details>
+    <p class="small muted" style="margin:var(--sp-2) 0">Ou collez un lien pour l’écouter directement ici :</p>
+    <form data-s="musicSet"><input type="text" name="u" placeholder="Lien Spotify (playlist, album, titre)" aria-label="Lien Spotify" value="${A(url)}" autocomplete="off"><button class="btn sm" type="submit">OK</button></form>` +
+    (src ? `<iframe src="${A(src)}" title="Lecteur Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe><div class="row"><button class="btn sm ghost" data-a="musicClear" type="button">Retirer</button></div>`
+      : `<div class="sugg">${MUSIC_SUGG.map(([n, u2]) => `<button class="btn sm" type="button" data-a="musicPick" data-u="${A(u2)}">${esc(n)}</button>`).join('')}</div>`);
 }
-ACT.musicToggle = () => { musicOpen = !musicOpen; renderMusic(); };
+function spPaint() {
+  if (!$('#spTitle')) return;
+  const s = SP.st, it = s && s.item;
+  const img = it && it.album && it.album.images && it.album.images[0], art = $('#spArt');
+  if (img) { if (art.getAttribute('src') !== img.url) art.src = img.url; art.hidden = false; $('#spNone').hidden = true; } else { art.hidden = true; $('#spNone').hidden = false; }
+  $('#spTitle').textContent = it ? it.name : 'Rien en lecture';
+  $('#spSub').textContent = it ? (it.artists || []).map(x => x.name).join(', ') : 'Lancez un titre dans Spotify (téléphone, ordinateur…) : il apparaîtra ici.';
+  const pos = it ? Math.min(it.duration_ms, (s.progress_ms || 0) + (s.is_playing ? Date.now() - SP.at : 0)) : 0;
+  $('#spBar').style.width = (it && it.duration_ms ? pos / it.duration_ms * 100 : 0) + '%';
+  $('#spTog').innerHTML = s && s.is_playing ? SPI.pause : SPI.play;
+  $('#spDev').textContent = s && s.device ? 'Sur : ' + s.device.name : '';
+}
+async function spPoll() {
+  if (!musicOpen || !ls.get('sp', null) || SP.busy) return;
+  SP.busy = true;
+  try { const r = await spApi('GET', '/me/player'); if (r) { if (r.status === 204) SP.st = null; else if (r.ok) { SP.st = await r.json(); SP.at = Date.now(); } } } finally { SP.busy = false; }
+  spPaint();
+}
+setInterval(() => { if (!musicOpen || !ls.get('sp', null)) return; spPaint(); if (++SP.n % 4 === 0) spPoll(); }, 1000);
+async function spCmd(method, path) {
+  const r = await spApi(method, path);
+  if (r && r.status === 403) toast('Spotify Premium est nécessaire pour piloter la lecture d’ici.');
+  else if (r && r.status === 404) toast('Aucun appareil actif : lancez d’abord un titre dans Spotify.');
+  else if (r && !r.ok && r.status !== 204) toast('Spotify n’a pas répondu (' + r.status + ').');
+  setTimeout(spPoll, 450);
+}
+ACT.musicToggle = () => { musicOpen = !musicOpen; renderMusic(); if (musicOpen) spPoll(); };
 ACT.musicPick = d => { ls.set('music', d.u); renderMusic(); };
 ACT.musicClear = () => { ls.del('music'); renderMusic(); };
+ACT.spPrev = () => spCmd('POST', '/me/player/previous');
+ACT.spNext = () => spCmd('POST', '/me/player/next');
+ACT.spToggle = () => spCmd('PUT', SP.st && SP.st.is_playing ? '/me/player/pause' : '/me/player/play');
+ACT.spOff = () => { ls.del('sp'); SP.st = null; renderMusic(); toast('Spotify déconnecté de ce navigateur.'); };
 SUB.musicSet = f => { const v = f.elements.u.value.trim(); if (!spotifyEmbed(v)) return toast('Ce lien n’est pas un lien Spotify (open.spotify.com/playlist/…).'); ls.set('music', v); renderMusic(); };
+SUB.spClient = f => { const v = f.elements.c.value.trim(); if (!/^[a-f0-9]{32}$/i.test(v)) return toast('Un Client ID Spotify fait 32 caractères (lettres a–f et chiffres).'); ls.set('spclient', v); spConnect(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && musicOpen && !$('#dlg').open) { musicOpen = false; renderMusic(); } });
-renderMusic();
+renderMusic(); spCallback();
 
 /* Reflet de verre qui suit le curseur (purement visuel). */
 (() => {

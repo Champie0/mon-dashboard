@@ -204,3 +204,17 @@ jetons → base → matières → coque → composants → modules → mouvement
 
 - Rendu plus fluide : fond statique (plus de flou animé ni de calques de mélange), flous de verre réduits, ombres moins étendues, animations d'entrée plus légères.
 - Lecteur Spotify : bouton ♪ en haut à droite, panneau flottant qui continue de jouer quand on change de page. Le lien collé (playlist, album, titre…) reste sur l'appareil et n'entre ni dans la synchronisation ni dans les sauvegardes.
+
+## Version 2.3.0 — Spotify connecté
+
+Bouton ♪ en haut à droite : lecteur « console verte » qui affiche et pilote la lecture en cours de ton compte Spotify
+(pochette, titre, progression, précédent / pause / suivant), sur n'importe quel appareil (téléphone, ordinateur…).
+
+Mise en place (une seule fois) :
+1. Sur developer.spotify.com/dashboard, créer une application.
+2. Y saisir comme *Redirect URI* l'adresse affichée dans le panneau (celle du site, `https://champie0.github.io/mon-dashboard/`).
+3. Coller son *Client ID* dans le panneau, puis « Connecter ».
+
+La connexion est directe depuis le navigateur (OAuth PKCE, sans serveur). Client ID et jetons restent sur l'appareil,
+hors synchronisation et hors sauvegardes. Piloter la lecture demande Spotify Premium ; sans connexion, un lien collé
+s'écoute dans le lecteur intégré.
