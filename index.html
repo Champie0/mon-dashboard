@@ -496,7 +496,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.2.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.3.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -1828,7 +1828,7 @@ const aiCfg = () => {
 const AI = {
   msgs: arr(ls.get('aichat', [])).filter(m => isObj(m) && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
     .map(m => ({ role: m.role, text: str(m.text, 12000), raw: str(m.raw, 20000), plan: isObj(m.plan) ? m.plan : null })).slice(-40),
-  busy: false, draft: '', err: ''
+  busy: false, stopped: false, ctls: null, draft: '', err: ''
 };
 const aiSave = () => ls.set('aichat', AI.msgs);
 const AI_SUGGEST = [
@@ -1896,7 +1896,9 @@ async function aiCall(msgs, system) {
     if (c.model && !/:free$/.test(c.model)) throw new Error('Modèle refusé : seuls les modèles gratuits (nom finissant par « :free ») sont autorisés, pour éviter tout coût.');
     /* Les modèles gratuits sont souvent saturés : on en interroge trois en même temps, la première réponse gagne. */
     const list = [...new Set([c.model, ...await aiFreeModels()].filter(Boolean))].slice(0, 3);
+    if (AI.stopped) throw new Error('stop');
     const ctls = list.map(() => new AbortController()), tm = setTimeout(() => ctls.forEach(k => k.abort()), 75000);
+    AI.ctls = ctls;
     try {
       return await Promise.any(list.map((m, i) => aiOne(m, c, msgs, system, ctls[i].signal).then(o => { ctls.forEach((k, j) => j !== i && k.abort()); return o; })));
     } catch (e) {
@@ -1904,7 +1906,7 @@ async function aiCall(msgs, system) {
       const bad = errs.find(x => x && (x.status === 401 || x.status === 403)); if (bad) throw bad;
       if (errs.every(x => x && x.name === 'AbortError')) throw new Error('Aucun modèle gratuit n’a répondu à temps : ils sont souvent saturés. Réessayez dans un instant, ou demandez un plan plus court.');
       throw errs.find(x => x && x.status) || errs[0];
-    } finally { clearTimeout(tm); }
+    } finally { clearTimeout(tm); AI.ctls = null; }
   } catch (e) {
     if (e instanceof TypeError) throw new Error('Impossible de joindre OpenRouter (connexion ou blocage du navigateur).');
     throw e;
@@ -1951,7 +1953,7 @@ function aiMsgsHTML() {
   if (!AI.msgs.length) h += `<div class="ai-m assistant"><p>Dites-moi ce que vous voulez apprendre ou accomplir, et le temps dont vous disposez. Je vous propose un planning que vous pourrez ajouter d’un clic à vos tâches, objectifs, habitudes et rappels.</p></div>
     <div class="ai-sugg">${AI_SUGGEST.map((s, k) => `<button class="btn sm" data-a="aiSuggest" data-k="${k}">${esc(s)}</button>`).join('')}</div>`;
   AI.msgs.forEach((m, i) => { h += `<div class="ai-m ${m.role}${m.plan ? ' wide' : ''}">${aiRich(m.text)}${m.plan ? planHTML(m.plan, i) : ''}</div>`; });
-  if (AI.busy) h += '<div class="ai-m assistant" role="status" aria-label="L’assistant réfléchit"><span class="dots"><i></i><i></i><i></i></span></div>';
+  if (AI.busy) h += '<div class="ai-m assistant" role="status" aria-label="L’assistant réfléchit"><span class="dots"><i></i><i></i><i></i></span> <button class="btn sm ghost" data-a="aiStop">Arrêter</button></div>';
   if (AI.err) h += `<p class="err" role="alert">${esc(AI.err)}</p>`;
   return h;
 }
@@ -1960,7 +1962,7 @@ function aiPaint(clear) {
   const box = $('#aichat'); if (!box) return render();
   box.innerHTML = aiMsgsHTML();
   const inp = $('#aiin'); if (inp && clear) inp.value = '';
-  const b = $('#aisend'); if (b) b.disabled = AI.busy;
+  const b = $('#aisend'), z = $('#aistop'); if (b) b.hidden = AI.busy; if (z) z.hidden = !AI.busy;
   const last = box.querySelector('.ai-m:last-of-type, .err:last-child');
   const el = [...box.querySelectorAll('.ai-m')].pop();
   if (el && AI.msgs.length) el.scrollIntoView({ block: AI.busy ? 'nearest' : 'start' });
@@ -1971,17 +1973,17 @@ VIEWS.assistant = () => {
   return `<div class="ai-bar"><span class="pill">${esc(AI_PROVIDERS[c.provider].label)}</span><span class="grow"></span>
     <button class="btn sm" data-a="aiReset"${AI.msgs.length ? '' : ' disabled'}>Nouvelle conversation</button><button class="btn sm ghost" data-a="aiConf">Configuration</button></div>
   <section class="hud" id="aichat" aria-live="polite">${aiMsgsHTML()}</section>
-  <form class="hud ai-in" data-s="aiSend"><textarea id="aiin" rows="1" maxlength="4000" data-i="aiDraft" placeholder="Ce que vous voulez apprendre ou accomplir…" aria-label="Votre message à l’assistant">${esc(AI.draft)}</textarea><button id="aisend" class="btn primary"${AI.busy ? ' disabled' : ''}>Envoyer</button></form>`;
+  <form class="hud ai-in" data-s="aiSend"><textarea id="aiin" rows="1" maxlength="4000" data-i="aiDraft" placeholder="Ce que vous voulez apprendre ou accomplir…" aria-label="Votre message à l’assistant">${esc(AI.draft)}</textarea><button id="aisend" class="btn primary"${AI.busy ? ' hidden' : ''}>Envoyer</button><button id="aistop" type="button" class="btn" data-a="aiStop"${AI.busy ? '' : ' hidden'}>Arrêter</button></form>`;
 };
 async function aiSend(text) {
   text = text.trim(); if (!text || AI.busy) return;
   if (!navigator.onLine) { AI.err = 'Pas de connexion : l’assistant a besoin d’Internet.'; aiPaint(); return; }
-  AI.msgs.push({ role: 'user', text: text.slice(0, 4000), raw: '', plan: null }); AI.draft = ''; AI.err = ''; AI.busy = true; aiSave(); aiPaint(true);
+  AI.msgs.push({ role: 'user', text: text.slice(0, 4000), raw: '', plan: null }); AI.draft = ''; AI.err = ''; AI.busy = true; AI.stopped = false; aiSave(); aiPaint(true);
   try {
     const raw = await aiCall(AI.msgs.map(m => ({ role: m.role, text: m.raw || m.text })), aiSystem());
     const r = aiParse(raw);
     AI.msgs.push({ role: 'assistant', text: r.text, raw, plan: r.plan });
-  } catch (e) { AI.msgs.pop(); AI.draft = text; AI.err = e.message || 'Erreur inattendue.'; const i = $('#aiin'); if (i) i.value = text; }
+  } catch (e) { AI.msgs.pop(); AI.draft = text; AI.err = AI.stopped ? '' : (e.message || 'Erreur inattendue.'); const i = $('#aiin'); if (i) i.value = text; if (AI.stopped) toast('Demande arrêtée. Votre message est remis dans le champ.'); }
   AI.busy = false; aiSave(); aiPaint();
 }
 SUB.aiSend = form => aiSend($('#aiin', form).value);
@@ -1989,6 +1991,7 @@ INP.aiDraft = (d, t) => { AI.draft = t.value; };
 document.addEventListener('keydown', e => {
   if (e.target && e.target.id === 'aiin' && e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (e.target.form) e.target.form.requestSubmit(); }
 });
+ACT.aiStop = () => { if (!AI.busy) return; AI.stopped = true; (AI.ctls || []).forEach(k => k.abort()); };
 ACT.aiSuggest = d => { const i = $('#aiin'); if (i) { i.value = AI_SUGGEST[+d.k] || ''; AI.draft = i.value; i.focus(); } };
 ACT.aiReset = () => { if (AI.busy) return; AI.msgs = []; AI.err = ''; aiSave(); render(); };
 CH.aiPick = (d, t) => {
