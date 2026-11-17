@@ -733,6 +733,13 @@ async function initCloud() {
     cloud = { au, fs, auth: au.getAuth(app), db: fs.getFirestore(app) };
     cloudFailed = false;
     au.onAuthStateChanged(cloud.auth, u => safe(() => onAuth(u)));
+    /* Retour d'une connexion par redirection (repli quand la fenêtre est bloquée). */
+    au.getRedirectResult(cloud.auth).then(res => {
+      if (!res) return;
+      const info = au.getAdditionalUserInfo(res);
+      if (info && info.username) ls.set('ghname:' + res.user.uid, info.username);
+      safe(() => onAuth(res.user)); toast('Connecté. Vos données se synchronisent.');
+    }).catch(e => { console.warn(e); authFailDlg(e); });
   } catch (e) {
     console.warn('Firebase injoignable', e);
     cloudFailed = true;
@@ -860,6 +867,8 @@ const AUTH_ERR = {
   'auth/operation-not-allowed': 'La connexion GitHub n’est pas activée dans Firebase (Authentication > Mode de connexion).',
   'auth/account-exists-with-different-credential': 'Un compte existe déjà avec cette adresse e-mail, mais avec un autre mode de connexion.',
   'auth/network-request-failed': 'Connexion impossible : vérifiez votre accès à Internet.',
+  'auth/internal-error': 'Erreur interne de connexion. Vérifiez dans GitHub (Settings > Developer settings > OAuth Apps) que l’URL de rappel est bien celle donnée par Firebase, puis réessayez.',
+  'auth/web-storage-unsupported': 'Ce navigateur bloque le stockage nécessaire à la connexion (mode privé ou cookies tiers bloqués). Essayez dans une fenêtre normale.',
   'auth/invalid-api-key': 'La configuration Firebase du fichier index.html est incorrecte (apiKey).'
 };
 async function doLogout() {
@@ -2061,9 +2070,16 @@ ACT.login = async () => {
   } catch (e) {
     if (e && (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request')) return;
     console.warn(e);
-    infoDlg('Connexion impossible', `<p>${esc(AUTH_ERR[e && e.code] || 'La connexion avec GitHub n’a pas abouti. Réessayez dans un instant.')}</p>`);
+    /* Fenêtre bloquée ou non prise en charge (mobile, application intégrée) : on bascule sur la redirection. */
+    if (e && ['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(e.code)) {
+      try { toast('Fenêtre bloquée : redirection vers GitHub…'); await cloud.au.signInWithRedirect(cloud.auth, new cloud.au.GithubAuthProvider()); return; } catch (e2) { e = e2; }
+    }
+    authFailDlg(e);
   }
 };
+function authFailDlg(e) {
+  infoDlg('Connexion impossible', `<p>${esc(AUTH_ERR[e && e.code] || 'La connexion avec GitHub n’a pas abouti. Réessayez dans un instant.')}</p><p class="muted small" style="margin-top:8px">Code : ${esc((e && e.code) || (e && e.message) || 'inconnu')}</p>`);
+}
 ACT.logout = () => {
   if (dirty.size && (!navigator.onLine || !cloud)) return confirmDlg({ title: 'Se déconnecter maintenant ?', msg: 'Des modifications n’ont pas encore été envoyées à votre compte. Elles resteront sur cet appareil et partiront à votre prochaine connexion ici.', ok: 'Se déconnecter', onOk: () => doLogout() });
   return doLogout();
