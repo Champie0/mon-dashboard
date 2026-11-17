@@ -199,3 +199,8 @@ jetons → base → matières → coque → composants → modules → mouvement
 - Sous-pages : le fil d'Ariane remplace le grand titre de section.
 - Graphiques d'habitudes lisibles sur téléphone ; écran de chargement avec indicateur.
 - Aucun changement de données, de calcul, de synchronisation ni de sauvegarde.
+
+## Version 2.2.0 — allègement et musique
+
+- Rendu plus fluide : fond statique (plus de flou animé ni de calques de mélange), flous de verre réduits, ombres moins étendues, animations d'entrée plus légères.
+- Lecteur Spotify : bouton ♪ en haut à droite, panneau flottant qui continue de jouer quand on change de page. Le lien collé (playlist, album, titre…) reste sur l'appareil et n'entre ni dans la synchronisation ni dans les sauvegardes.

@@ -91,12 +91,12 @@ if(p.glass!==false)c.add('glass');}catch(e){document.documentElement.classList.a
   --edge-2:inset 0 1px 0 rgba(255,255,255,.42),inset 1px 0 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.30),inset 10px 12px 26px -14px rgba(255,255,255,.20),inset -10px -12px 28px -16px rgba(150,175,255,.18);
   --drop-0:0 1px 2px rgba(0,0,0,.22);
   --drop-1:0 1px 1px rgba(0,0,0,.24),0 18px 44px -20px rgba(0,0,0,.72);
-  --drop-2:0 1px 1px rgba(0,0,0,.28),0 28px 64px -22px rgba(0,0,0,.78),0 60px 120px -56px rgba(70,95,230,.28);
-  --drop-3:0 2px 4px rgba(0,0,0,.3),0 44px 110px -24px rgba(0,0,0,.8),0 12px 32px rgba(0,0,0,.35);
+  --drop-2:0 1px 1px rgba(0,0,0,.28),0 24px 48px -22px rgba(0,0,0,.7);
+  --drop-3:0 2px 4px rgba(0,0,0,.3),0 30px 70px -20px rgba(0,0,0,.75);
   --rim:linear-gradient(145deg,rgba(255,255,255,.40) 0%,rgba(255,255,255,.08) 24%,rgba(255,255,255,0) 50%,rgba(255,255,255,.05) 76%,rgba(255,255,255,.22) 100%);
-  --blur-1:blur(26px) saturate(185%) brightness(1.05);
-  --blur-2:blur(38px) saturate(205%) brightness(1.08);
-  --blur-3:blur(54px) saturate(215%) brightness(1.08);
+  --blur-1:blur(14px) saturate(160%);
+  --blur-2:blur(20px) saturate(170%);
+  --blur-3:blur(28px) saturate(180%);
   --wp-top:rgba(110,125,255,.20);
   --wp-a:rgba(90,105,255,.40); --wp-b:rgba(60,190,255,.26); --wp-c:rgba(80,100,240,.26);
   --wp-base:linear-gradient(180deg,#05060B 0%,#080A12 100%);
@@ -144,8 +144,8 @@ if(p.glass!==false)c.add('glass');}catch(e){document.documentElement.classList.a
   --edge-2:inset 0 1px 0 #fff,inset 1px 0 0 rgba(255,255,255,.8),inset 0 -1px 0 rgba(40,50,110,.10),inset 10px 12px 26px -14px #fff,inset -10px -12px 28px -16px rgba(120,140,255,.2);
   --drop-0:0 1px 2px rgba(30,40,90,.08);
   --drop-1:0 1px 1px rgba(30,40,90,.07),0 18px 44px -22px rgba(40,55,130,.34);
-  --drop-2:0 1px 1px rgba(30,40,90,.08),0 28px 60px -24px rgba(40,55,130,.38),0 60px 110px -54px rgba(80,100,230,.24);
-  --drop-3:0 2px 4px rgba(30,40,90,.10),0 44px 100px -26px rgba(40,55,130,.42),0 12px 30px rgba(30,40,90,.12);
+  --drop-2:0 1px 1px rgba(30,40,90,.08),0 24px 48px -24px rgba(40,55,130,.34);
+  --drop-3:0 2px 4px rgba(30,40,90,.10),0 30px 64px -22px rgba(40,55,130,.38);
   --rim:linear-gradient(145deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.4) 28%,rgba(255,255,255,.12) 55%,rgba(255,255,255,.6) 100%);
   --wp-top:rgba(130,145,255,.28);
   --wp-a:rgba(125,135,255,.55); --wp-b:rgba(95,205,255,.48); --wp-c:rgba(150,160,255,.42);
@@ -175,15 +175,13 @@ button{cursor:pointer}
 /* Fond : lumière froide + grille très fine, deux halos qui dérivent lentement */
 .wallpaper{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
   background:radial-gradient(1400px 800px at 50% -25%,var(--wp-top),transparent 70%),var(--wp-base)}
-.wallpaper::before{content:"";position:absolute;inset:-22%;
+.wallpaper::before{content:"";position:absolute;inset:0;
   background:
     radial-gradient(34vmax 26vmax at 16% 18%,var(--wp-a),transparent 68%),
     radial-gradient(30vmax 24vmax at 86% 12%,var(--wp-b),transparent 68%),
-    radial-gradient(36vmax 26vmax at 62% 98%,var(--wp-c),transparent 68%);
-  filter:blur(30px) saturate(130%);animation:aurora 52s ease-in-out infinite alternate;will-change:transform}
-.wallpaper::after{content:"";position:absolute;inset:0;opacity:.6;mix-blend-mode:overlay;
-  background-image:var(--noise),linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
-  background-size:180px 180px,64px 64px,64px 64px;
+    radial-gradient(36vmax 26vmax at 62% 98%,var(--wp-c),transparent 68%)}
+.wallpaper::after{content:"";position:absolute;inset:0;opacity:.7;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:64px 64px;
   -webkit-mask:radial-gradient(120% 90% at 50% 40%,#000 25%,transparent 85%);mask:radial-gradient(120% 90% at 50% 40%,#000 25%,transparent 85%)}
 
 /* ---------- 3. Matières ---------- */
@@ -271,7 +269,7 @@ h1,.top h1{font-family:var(--font-d);font-weight:700;font-size:var(--fs-title);l
 
 /* ---------- 5. Composants ---------- */
 /* Cartes */
-.hud{border-radius:var(--r-lg);padding:var(--sp-4) 28px;transition:background var(--t),border-color var(--t),box-shadow var(--t)}
+.hud{border-radius:var(--r-lg);padding:var(--sp-4) 28px;transition:background var(--t),border-color var(--t)}
 :root:not(.no-glow) .hud:hover{box-shadow:var(--edge-1),0 1px 1px rgba(0,0,0,.24),0 26px 56px -22px rgba(0,0,0,.78)}
 .hud h2,.h2{font-family:var(--font-d);font-weight:650;font-size:var(--fs-xl);letter-spacing:-.03em;line-height:1.25;margin:-2px 0 var(--sp-3);display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
 .hud h2 .tag,.h2 .tag{font-family:var(--mono);font-size:var(--fs-xs);letter-spacing:.04em;font-weight:550;height:24px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;background:var(--fill-0);border:1px solid var(--line);color:var(--text-2)}
@@ -296,9 +294,9 @@ h1,.top h1{font-family:var(--font-d);font-weight:700;font-size:var(--fs-title);l
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);height:var(--h-md);padding:0 22px;border-radius:999px;border:1px solid var(--line-2);
   background:var(--key-2),rgba(255,255,255,.07);color:var(--text);font-size:var(--fs-md);font-weight:600;letter-spacing:-.005em;white-space:nowrap;
   box-shadow:var(--edge-1),0 8px 20px -12px rgba(0,0,0,.7);
-  transition:transform var(--t-fast),background var(--t-fast),box-shadow var(--t-fast),border-color var(--t-fast),filter var(--t-fast)}
+  transition:transform var(--t-fast),background var(--t-fast),border-color var(--t-fast)}
 :root.light .btn{background:var(--key-2),rgba(255,255,255,.72);border-color:rgba(255,255,255,.95);box-shadow:var(--edge-1),0 8px 20px -14px rgba(40,55,130,.45)}
-.btn:hover{transform:translateY(-1px);filter:brightness(1.12);box-shadow:var(--edge-1),0 14px 28px -14px rgba(0,0,0,.8)}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--edge-1),0 14px 28px -14px rgba(0,0,0,.8)}
 .btn:active{transform:scale(.975);filter:brightness(.96);box-shadow:inset 0 2px 8px rgba(0,0,0,.35),var(--edge-0)}
 .btn:focus-visible{outline:0;box-shadow:var(--edge-1),0 0 0 3px color-mix(in srgb,var(--acc-a) 55%,transparent)}
 .btn.sm{height:var(--h-sm);padding:0 18px;font-size:var(--fs-sm)}
@@ -316,9 +314,9 @@ h1,.top h1{font-family:var(--font-d);font-weight:700;font-size:var(--fs-title);l
 /* Boutons ronds (icône seule) : zone tactile 44 px */
 .ic{display:inline-grid;place-items:center;flex:none;width:var(--h-icon);height:var(--h-icon);border-radius:50%;border:1px solid var(--line-2);
   background:var(--key-1),rgba(255,255,255,.05);box-shadow:var(--edge-0);color:var(--text-2);font-size:16px;
-  transition:transform var(--t-fast),color var(--t-fast),background var(--t-fast),filter var(--t-fast)}
+  transition:transform var(--t-fast),color var(--t-fast),background var(--t-fast)}
 :root.light .ic{background:var(--key-1),rgba(255,255,255,.6);border-color:rgba(255,255,255,.9)}
-.ic:hover{color:var(--text);transform:scale(1.06);filter:brightness(1.18)}
+.ic:hover{color:var(--text);transform:scale(1.06);background:var(--key-1),var(--g-hover)}
 .ic:active{transform:scale(.94)}
 .ic:focus-visible{outline:0;box-shadow:var(--edge-0),0 0 0 3px color-mix(in srgb,var(--acc-a) 55%,transparent)}
 /* Icônes vectorielles posées par action : --i = dessin, --ic:"" active le pseudo-élément */
@@ -456,7 +454,7 @@ dialog::backdrop{background:radial-gradient(60% 60% at 50% 40%,rgba(60,70,160,.2
 .hello{font-family:var(--font-d);font-weight:700;font-size:var(--fs-hero);letter-spacing:-.05em;line-height:1;margin:4px 0 6px}
 .quote{font-size:var(--fs-lg);font-style:italic;color:var(--text-2);line-height:1.5;margin:var(--sp-3) 0;max-width:56ch;padding-left:var(--sp-3);border-left:2px solid var(--line-2)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
-.kpi{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:var(--sp-3) 20px;text-align:left;color:var(--text);border:1px solid var(--line);border-radius:var(--r-lg);-webkit-backdrop-filter:blur(20px) saturate(190%);backdrop-filter:blur(20px) saturate(190%);transition:background var(--t),border-color var(--t)}
+.kpi{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:var(--sp-3) 20px;text-align:left;color:var(--text);border:1px solid var(--line);border-radius:var(--r-lg);transition:background var(--t),border-color var(--t)}
 .kpi::before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:0 3px 3px 0;background:var(--acc-grad);opacity:.9}
 .kpi span{font-size:var(--fs-sm);color:var(--text-2)}
 .kpi b{font-family:var(--font-d);font-size:clamp(22px,2.3vw,32px);font-weight:700;letter-spacing:-.04em;line-height:1.1;overflow-wrap:anywhere;
@@ -600,7 +598,7 @@ dialog::backdrop{background:radial-gradient(60% 60% at 50% 40%,rgba(60,70,160,.2
 .focus-in{text-align:center}
 .focus-in .list{text-align:left;margin-top:6px}
 .focus-t{font-family:var(--font-d);font-weight:700;font-size:clamp(32px,5vw,60px);letter-spacing:-.045em;line-height:1.1;margin:6px 0 4px;overflow-wrap:anywhere}
-.focus-next{margin:var(--sp-4) 0 var(--sp-3);padding:26px;border-radius:var(--r-xl);border:1px solid var(--line-2);background:linear-gradient(135deg,color-mix(in srgb,var(--acc-a) 18%,transparent),transparent),var(--key-1),var(--fill-0);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+.focus-next{margin:var(--sp-4) 0 var(--sp-3);padding:26px;border-radius:var(--r-xl);border:1px solid var(--line-2);background:linear-gradient(135deg,color-mix(in srgb,var(--acc-a) 18%,transparent),transparent),var(--key-1),var(--fill-0)}
 .focus-step{font-size:clamp(22px,2.6vw,30px);font-weight:560;line-height:1.35;margin:6px 0 var(--sp-3);overflow-wrap:anywhere}
 .focus-timer{margin:var(--sp-4) 0 4px}
 .focus-time{font-family:var(--font-d);font-size:clamp(76px,14vw,140px);font-weight:700;letter-spacing:-.06em;line-height:1;font-variant-numeric:tabular-nums;margin-bottom:var(--sp-3);
@@ -633,9 +631,21 @@ dialog::backdrop{background:radial-gradient(60% 60% at 50% 40%,rgba(60,70,160,.2
 .ai-in textarea:focus,.ai-in textarea:focus-visible{border:0;box-shadow:none;outline:none}
 .ai-in:focus-within{border-color:var(--line-2)}
 
+/* Lecteur de musique (Spotify) : panneau flottant qui reste en place quand on change de page */
+.music-btn[aria-pressed=true]{color:var(--text);background:linear-gradient(135deg,color-mix(in srgb,var(--olive) 40%,transparent),transparent),var(--key-1),var(--fill-0);border-color:color-mix(in srgb,var(--olive) 60%,transparent)}
+#music{position:fixed;z-index:40;right:var(--sp-4);bottom:var(--sp-4);width:min(380px,calc(100vw - 32px));padding:18px;border-radius:var(--r-xl);background:var(--key-2),var(--fill-3);box-shadow:var(--edge-2),var(--drop-3);-webkit-backdrop-filter:var(--blur-3);backdrop-filter:var(--blur-3);
+  transition:opacity var(--t),transform var(--t),visibility var(--t)}
+#music:not(.open){opacity:0;visibility:hidden;pointer-events:none;transform:translateY(12px)}
+#music h2{margin:0 0 var(--sp-2);font-size:var(--fs-lg)}
+#music iframe{display:block;width:100%;height:352px;border:0;border-radius:var(--r);background:transparent}
+#music form{display:flex;gap:var(--sp-2);margin-bottom:var(--sp-2)}
+#music form input{flex:1;min-width:0;height:var(--h-md);font-size:var(--fs-sm)}
+#music .row{margin-top:var(--sp-2)}
+#music .sugg{display:flex;flex-wrap:wrap;gap:var(--sp-1);margin-top:var(--sp-2)}
+
 /* ---------- 7. Mouvement (désactivable dans Réglages) ---------- */
 @keyframes aurora{0%{transform:translate3d(-2%,-1%,0) rotate(0) scale(1)}50%{transform:translate3d(3%,2%,0) rotate(4deg) scale(1.06)}100%{transform:translate3d(-1%,3%,0) rotate(-3deg) scale(1.02)}}
-@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.992)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.96)}}
 @keyframes fade{from{opacity:0}}
 @keyframes draw{from{stroke-dashoffset:var(--from,1)}}
@@ -643,8 +653,8 @@ dialog::backdrop{background:radial-gradient(60% 60% at 50% 40%,rgba(60,70,160,.2
 @keyframes pulse{50%{opacity:.72}}
 @keyframes blink{50%{opacity:.25}}
 @keyframes spin{to{transform:rotate(360deg)}}
-#view>*{animation:rise .55s var(--ease) both}
-#view>*:nth-child(2){animation-delay:.05s}#view>*:nth-child(3){animation-delay:.1s}#view>*:nth-child(4){animation-delay:.15s}#view>*:nth-child(n+5){animation-delay:.2s}
+#view>*{animation:rise .35s var(--ease) both}
+#view>*:nth-child(n+2){animation-delay:.04s}
 dialog[open]{animation:rise .34s var(--ease)}
 dialog[open]::backdrop{animation:fade .3s ease-out}
 .toast{animation:pop .3s var(--ease)}
@@ -700,6 +710,8 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
   #view{padding:var(--sp-3) var(--sp-3) 0}
   #toasts{bottom:calc(92px + env(safe-area-inset-bottom))}
   .ai-in{bottom:calc(92px + env(safe-area-inset-bottom))}
+  #music{right:12px;left:12px;width:auto;bottom:calc(92px + env(safe-area-inset-bottom))}
+  #music iframe{height:232px}
   .hud{padding:22px 20px}
   .hero{grid-template-columns:1fr;justify-items:center;text-align:center;padding:30px 22px}
   .hero>:not(div){order:0}
@@ -743,7 +755,7 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
   <div class="main">
     <header class="top">
       <div><div class="secno" id="secno"></div><h1 id="sectitle" class="gilt"></h1></div>
-      <div class="top-r"><span id="sync" class="pill" role="status"></span><span id="auth"></span></div>
+      <div class="top-r"><button class="ic music-btn" id="musicBtn" data-a="musicToggle" aria-label="Musique Spotify" aria-pressed="false" title="Musique"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button><span id="sync" class="pill" role="status"></span><span id="auth"></span></div>
     </header>
     <div id="notices"></div>
     <main id="view" tabindex="-1"></main>
@@ -751,6 +763,7 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
 </div>
 
 <dialog id="dlg"></dialog>
+<aside id="music" aria-label="Lecteur de musique" aria-hidden="true"></aside>
 <div id="toasts" role="status" aria-live="polite"></div>
 <div id="gate" hidden><div><p>Chargement de votre compte…</p><div id="gate-x"></div></div></div>
 <noscript><p style="padding:20px">Ce dashboard a besoin de JavaScript pour fonctionner.</p></noscript>
@@ -775,7 +788,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '2.1.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '2.2.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -2866,6 +2879,34 @@ ACT.gateLocal = () => doLogout();
   setInterval(() => safe(tick), 20000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) safe(tick); });
 })();
+
+
+/* ---------- Musique : lecteur Spotify intégré (lien collé par l'utilisateur, gardé sur cet appareil) ---------- */
+const MUSIC_SUGG = [['Lofi Beats', 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn'], ['Deep Focus', 'https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ']];
+let musicOpen = false;
+function spotifyEmbed(u) {
+  u = String(u || '').trim();
+  const m = u.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album|track|artist|episode|show)\/([A-Za-z0-9]+)/) || u.match(/^spotify:(playlist|album|track|artist|episode|show):([A-Za-z0-9]+)$/);
+  return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0` : '';
+}
+function renderMusic() {
+  const el = $('#music'); if (!el) return;
+  const url = ls.get('music', ''), src = spotifyEmbed(url);
+  el.classList.toggle('open', musicOpen); el.setAttribute('aria-hidden', String(!musicOpen));
+  $('#musicBtn').setAttribute('aria-pressed', String(musicOpen));
+  /* L'iframe n'est recréée que si le lien change : la musique continue quand on navigue. */
+  if (el.dataset.src === src && el.firstChild) return;
+  el.dataset.src = src;
+  el.innerHTML = `<h2>Musique</h2><form data-s="musicSet"><input type="text" name="u" placeholder="Collez un lien Spotify" aria-label="Lien Spotify" value="${A(url)}" autocomplete="off"><button class="btn sm primary" type="submit">OK</button></form>` +
+    (src ? `<iframe src="${A(src)}" title="Lecteur Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe><div class="row"><span class="small muted grow">Connecté à Spotify dans ce navigateur, la lecture est complète ; sinon, extraits de 30 s.</span><button class="btn sm ghost" data-a="musicClear" type="button">Retirer</button></div>`
+      : `<p class="small muted">Playlist, album ou titre : sur Spotify, Partager → Copier le lien, puis collez-le ici.</p><div class="sugg">${MUSIC_SUGG.map(([n, u2]) => `<button class="btn sm" type="button" data-a="musicPick" data-u="${A(u2)}">${esc(n)}</button>`).join('')}</div>`);
+}
+ACT.musicToggle = () => { musicOpen = !musicOpen; renderMusic(); };
+ACT.musicPick = d => { ls.set('music', d.u); renderMusic(); };
+ACT.musicClear = () => { ls.del('music'); renderMusic(); };
+SUB.musicSet = f => { const v = f.elements.u.value.trim(); if (!spotifyEmbed(v)) return toast('Ce lien n’est pas un lien Spotify (open.spotify.com/playlist/…).'); ls.set('music', v); renderMusic(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && musicOpen && !$('#dlg').open) { musicOpen = false; renderMusic(); } });
+renderMusic();
 
 /* Reflet de verre qui suit le curseur (purement visuel). */
 (() => {
