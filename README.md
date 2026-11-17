@@ -149,3 +149,10 @@ Le dashboard est une application web installable (téléphone, tablette, ordinat
 - **Où installer** : Réglages > « Installer sur cet appareil » (bouton direct sur Chrome et Edge, instructions sur iPhone/iPad avec Safari : Partager > Sur l'écran d'accueil).
 - **Mises à jour** : la page principale est chargée depuis le réseau dès qu'on est en ligne ; la copie locale ne sert qu'hors ligne. À chaque mise en ligne, augmenter `APP_VERSION` dans `index.html` et `VERSION` dans `sw.js`.
 - **Hors ligne** : seules les ressources du site sont gardées en copie ; Firebase, l'assistant IA et GitHub passent toujours par le réseau.
+
+## Projets, fiche de tâche, étapes et concentration
+
+- **Projets** : groupes repliables avec avancement, bouton « + » pour ajouter une tâche dans un projet, « Nouveau projet » (un projet peut rester vide), renommer, retirer (tâches conservées) ou supprimer avec ses tâches (annulable).
+- **Fiche de tâche** : cliquez sur le titre d'une tâche pour voir détails, note, échéance, projet et **étapes** (ajouter, cocher, supprimer, barre de progression).
+- **Mode concentration** (◎) : une seule tâche à l'écran, la prochaine étape en évidence et un minuteur (15/25/45/60 min) avec notification de fin.
+- L'assistant IA peut maintenant proposer des étapes pour chaque tâche du planning.

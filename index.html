@@ -367,10 +367,25 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
 kbd{display:inline-block;min-width:1.7em;text-align:center;padding:0 6px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:7px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11.5px;background:var(--g-2)}
 
 /* ---------- Projets ---------- */
-.proj{margin-top:20px}
+.proj{margin-top:22px}
 .proj:first-child{margin-top:4px}
-.proj-h{margin-bottom:6px;font-size:14px}
+.proj-h{margin-bottom:6px;gap:4px}
 .proj .bar{margin-bottom:2px}
+.proj-toggle{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:4px 8px;margin-left:-8px;border-radius:10px;color:var(--text);font:600 14.5px var(--font-d);letter-spacing:-.01em;cursor:pointer;transition:background var(--t-fast)}
+.proj-toggle:hover{background:var(--hover)}
+.chev{display:inline-block;font-size:11px;color:var(--text-2);transition:transform var(--t)}
+.proj.closed .chev{transform:rotate(-90deg)}
+.it-open{background:none;border:0;padding:0;margin:0;text-align:left;color:inherit;font:inherit;cursor:pointer;overflow-wrap:anywhere;border-radius:6px;transition:color var(--t-fast)}
+.it-open:hover{color:var(--accent)}
+.td-h{font:600 12px var(--font);letter-spacing:.05em;text-transform:uppercase;color:var(--text-2);margin:20px 0 8px}
+dialog.focus{width:min(620px,94vw)}
+.focus-in{text-align:center}
+.focus-in .list{text-align:left;margin-top:6px}
+.focus-t{font-family:var(--font-d);font-weight:600;font-size:clamp(22px,4.5vw,30px);letter-spacing:-.02em;line-height:1.2;margin:6px 0 4px;overflow-wrap:anywhere}
+.focus-next{margin:18px 0 12px;padding:16px;border-radius:var(--r-lg);background:var(--accent-soft);border:1px solid var(--line-2)}
+.focus-step{font-size:19px;font-weight:550;line-height:1.35;margin:6px 0 14px;overflow-wrap:anywhere}
+.focus-timer{margin:22px 0 4px}
+.focus-time{font-family:var(--font-d);font-size:clamp(44px,12vw,60px);font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-bottom:12px}
 .proj-chip{background:var(--accent-soft);color:var(--text);border-color:transparent}
 
 /* ---------- Assistant IA ---------- */
@@ -510,7 +525,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.5.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.6.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -588,7 +603,7 @@ const HABIT_COLORS = [['#6E7B2F', 'Olive'], ['#B4502C', 'Terracotta'], ['#C8892B
 const HABIT_ICONS = ['💧', '📖', '🏃', '🧘', '🛌', '🥗', '✍️', '🎸', '🧹', '💊', '🌿', '☀️', '🚶', '🎨', '💻', '📵'];
 const DEFAULTS = {
   home: () => ({ v: 1, quotes: ['Un pas après l’autre, mais un pas chaque jour.', 'Ce qui est fait aujourd’hui n’est plus à faire demain.', 'La régularité bat l’intensité.', 'Commence par le plus important, pas par le plus facile.', 'Mieux vaut fait que parfait.', 'Chaque jour compte, surtout celui-ci.'], top: [], firstUse: today(), lastExport: null }),
-  tasks: () => ({ v: 1, items: [] }),
+  tasks: () => ({ v: 1, items: [], projects: [] }),
   habits: () => ({ v: 1, items: [] }),
   goals: () => ({ v: 1, items: [] }),
   finance: () => ({
@@ -609,9 +624,9 @@ const NORMALIZE = {
   tasks(r) {
     need(Array.isArray(r.items));
     return {
-      v: 1, items: r.items.filter(t => isObj(t) && str(t.title).trim()).map(t => ({
+      v: 1, projects: [...new Set(lines(r.projects, 60))].slice(0, 100), items: r.items.filter(t => isObj(t) && str(t.title).trim()).map(t => ({
         id: str(t.id, 40) || uid(), title: str(t.title, 300).trim(), prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne',
-        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), done: !!t.done,
+        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), steps: arr(t.steps).filter(x => isObj(x) && str(x.text).trim()).map(x => ({ id: str(x.id, 40) || uid(), text: str(x.text, 200).trim(), done: !!x.done })).slice(0, 50), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), done: !!t.done,
         doneAt: validD(t.doneAt) ? t.doneAt : '', created: validD(t.created) ? t.created : today()
       }))
     };
@@ -938,7 +953,7 @@ function fieldHTML(f) {
   if (f.t === 'checks') return `<fieldset class="f" style="border:0;padding:0;margin:0 0 12px"><legend class="small muted" style="padding:0;margin-bottom:4px">${esc(f.l)}</legend><div class="checks">${f.opts.map(([val, lab]) => `<label><input type="checkbox" name="${f.n}" value="${esc(val)}"${arr(f.v).map(String).includes(String(val)) ? ' checked' : ''}>${esc(lab)}</label>`).join('')}</div></fieldset>`;
   if (f.t === 'select') c = `<select ${a}>${f.opts.map(o => { const [val, lab] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(val)}"${String(val) === String(v) ? ' selected' : ''}>${esc(lab)}</option>`; }).join('')}</select>`;
   else if (f.t === 'textarea') c = `<textarea ${a} rows="${f.rows || 4}" placeholder="${esc(f.ph || '')}">${esc(v)}</textarea>`;
-  else c = `<input type="${f.t || 'text'}" ${a} value="${esc(v)}" placeholder="${esc(f.ph || '')}"${f.step ? ` step="${f.step}"` : ''}${f.min != null ? ` min="${f.min}"` : ''}${f.max ? ` maxlength="${f.max}"` : ''} autocomplete="off">`;
+  else c = `<input type="${f.t || 'text'}" ${a} value="${esc(v)}" placeholder="${esc(f.ph || '')}"${f.step ? ` step="${f.step}"` : ''}${f.min != null ? ` min="${f.min}"` : ''}${f.max ? ` maxlength="${f.max}"` : ''} autocomplete="off"${f.list ? ` list="dl_${f.n}"` : ''}>${f.list ? `<datalist id="dl_${f.n}">${f.list.map(o => `<option value="${esc(o)}">`).join('')}</datalist>` : ''}`;
   return `<label class="f"><span>${esc(f.l)}${f.req ? ' *' : ''}</span>${c}${f.help ? `<small>${esc(f.help)}</small>` : ''}</label>`;
 }
 /** Ouvre un formulaire. onOk(valeurs) renvoie un message d'erreur, ou rien si tout va bien. */
@@ -1201,7 +1216,7 @@ ACT.topPick = () => {
 /* =====================================================================
    2. TÂCHES
    ===================================================================== */
-const TF = { status: 'todo', prio: '', tag: '', project: '', group: '', period: '', sort: 'due', limit: 150 };
+const TF = { status: 'todo', prio: '', tag: '', project: '', group: 'project', closed: new Set(), period: '', sort: 'due', limit: 150 };
 const PRIO = { haute: 0, moyenne: 1, basse: 2 };
 const taskSort = k => (a, b) => {
   const da = a.due || '9999', db = b.due || '9999', p = PRIO[a.prio] - PRIO[b.prio], d = da < db ? -1 : da > db ? 1 : 0;
@@ -1211,41 +1226,46 @@ function taskRow(t, t0, compact) {
   const late = !t.done && t.due && t.due < t0;
   return `<li class="${late ? 'late ' : ''}${t.done ? 'done' : ''}">
     <button class="chk" role="checkbox" aria-checked="${t.done}" data-a="taskToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} : ${esc(t.title)}">✓</button>
-    <div class="grow"><div class="it-title">${esc(t.title)}</div><div class="meta"><span class="chip ${t.prio}">Priorité ${t.prio}</span>
+    <div class="grow"><div class="it-title"><button class="it-open" data-a="taskOpen" data-id="${A(t.id)}" title="Voir la fiche">${esc(t.title)}</button></div><div class="meta"><span class="chip ${t.prio}">Priorité ${t.prio}</span>${(t.steps || []).length ? `<span class="chip">${t.steps.filter(x => x.done).length}/${t.steps.length} étapes</span>` : ''}
       ${t.due ? (late ? `<span class="chip late">En retard · ${esc(fmtShort(t.due))}</span>` : `<span>Échéance : ${esc(relDay(t.due))}</span>`) : ''}
       ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${t.note && !compact ? `<span>Note : ${esc(t.note.slice(0, 70))}${t.note.length > 70 ? '…' : ''}</span>` : ''}</div></div>
-    ${compact ? '' : `<button class="ic" data-a="taskEdit" data-id="${A(t.id)}" aria-label="Modifier ${esc(t.title)}" title="Modifier">✎</button><button class="ic" data-a="taskDel" data-id="${A(t.id)}" aria-label="Supprimer ${esc(t.title)}" title="Supprimer">✕</button>`}</li>`;
+    ${compact ? '' : `${t.done ? '' : `<button class="ic" data-a="focusOpen" data-id="${A(t.id)}" aria-label="Se concentrer sur ${esc(t.title)}" title="Se concentrer">◎</button>`}<button class="ic" data-a="taskEdit" data-id="${A(t.id)}" aria-label="Modifier ${esc(t.title)}" title="Modifier">✎</button><button class="ic" data-a="taskDel" data-id="${A(t.id)}" aria-label="Supprimer ${esc(t.title)}" title="Supprimer">✕</button>`}</li>`;
 }
 const sel = (c, k, v, opts, label) => `<div><label for="s_${c}_${k}">${label}</label><select id="s_${c}_${k}" data-c="${c}" data-k="${k}">${opts.map(([val, lab]) => `<option value="${esc(val)}"${val === v ? ' selected' : ''}>${esc(lab)}</option>`).join('')}</select></div>`;
-/** Tâches regroupées par projet, avec l'avancement de chaque projet. */
+const taskProjects = () => [...new Set([...(S.tasks.projects || []), ...S.tasks.items.map(t => t.project).filter(Boolean)])].sort((a, b) => a.localeCompare(b, 'fr'));
+/** Tâches regroupées par projet (repliables), avec avancement ; les projets vides restent visibles. */
 function taskGroups(shown, all, t0) {
-  const names = [...new Set(shown.map(t => t.project || ''))].sort((a, b) => !a ? 1 : !b ? -1 : a.localeCompare(b, 'fr'));
+  const projects = taskProjects(), present = new Set(shown.map(t => t.project || '')), showAll = !TF.prio && !TF.tag && !TF.project && !TF.period;
+  if (!projects.length) return `<ul class="list">${shown.map(t => taskRow(t, t0)).join('')}</ul>`;
+  const names = projects.filter(n => present.has(n) || showAll);
+  if (present.has('')) names.push('');
   return names.map(n => {
-    const mine = shown.filter(t => (t.project || '') === n), tot = n ? all.filter(t => t.project === n) : [], done = tot.filter(t => t.done).length, pct = tot.length ? Math.round(done / tot.length * 100) : 0;
-    return `<div class="proj"><div class="row proj-h"><b class="grow">${esc(n || 'Sans projet')}</b>${n ? `<span class="muted small">${done} / ${tot.length} terminées</span>` : ''}</div>${n ? `<div class="bar" role="img" aria-label="Avancement de ${esc(n)} : ${pct} %"><i style="width:${pct}%"></i></div>` : ''}<ul class="list">${mine.map(t => taskRow(t, t0)).join('')}</ul></div>`;
+    const mine = shown.filter(t => (t.project || '') === n), key = encodeURIComponent(n), closed = TF.closed.has(n);
+    const tot = n ? all.filter(t => t.project === n) : [], done = tot.filter(t => t.done).length, pct = tot.length ? Math.round(done / tot.length * 100) : 0;
+    return `<div class="proj${closed ? ' closed' : ''}"><div class="row proj-h"><button class="proj-toggle" data-a="projToggle" data-k="${key}" aria-expanded="${!closed}"><span class="chev" aria-hidden="true">▾</span>${esc(n || 'Sans projet')}</button><span class="muted small grow">${n ? (tot.length ? `${done} / ${tot.length} terminées` : 'vide') : plural(mine.length, 'tâche', 'tâches')}</span>${n ? `<button class="ic" data-a="taskNewIn" data-k="${key}" aria-label="Ajouter une tâche à ${esc(n)}" title="Ajouter une tâche à ce projet">+</button><button class="ic" data-a="projEdit" data-k="${key}" aria-label="Modifier le projet ${esc(n)}" title="Modifier le projet">✎</button>` : ''}</div>${n && !closed ? bar(pct, '', `Avancement de ${n} : ${pct} %`) : ''}${closed ? '' : mine.length ? `<ul class="list">${mine.map(t => taskRow(t, t0)).join('')}</ul>` : '<p class="muted small" style="padding:10px 2px">Aucune tâche à afficher dans ce projet.</p>'}</div>`;
   }).join('');
 }
 VIEWS.taches = () => {
   const t0 = today(), ws = weekStart(t0), we = addDays(ws, 6), all = S.tasks.items;
   const tags = [...new Set(all.flatMap(t => t.tags))].sort();
   if (TF.tag && !tags.includes(TF.tag)) TF.tag = '';
-  const projects = [...new Set(all.map(t => t.project).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+  const projects = taskProjects();
   if (TF.project && TF.project !== '-' && !projects.includes(TF.project)) TF.project = '';
   const list = all.filter(t => (TF.status === 'all' || (TF.status === 'done') === t.done) && (!TF.prio || t.prio === TF.prio) && (!TF.tag || t.tags.includes(TF.tag)) && (!TF.project || (TF.project === '-' ? !t.project : t.project === TF.project)) &&
     (!TF.period || (TF.period === 'today' ? t.due === t0 : TF.period === 'week' ? t.due >= ws && t.due <= we : !t.done && t.due && t.due < t0))).sort(taskSort(TF.sort));
   const filtered = TF.status !== 'todo' || TF.prio || TF.tag || TF.project || TF.period;
   return `<section class="hud">
-    <form class="row" data-s="taskQuick" style="margin-bottom:14px"><input class="grow" id="quick" type="text" maxlength="300" placeholder="Nouvelle tâche, puis Entrée" aria-label="Titre de la nouvelle tâche" autocomplete="off"><button class="btn primary">Ajouter</button><button type="button" class="btn" data-a="taskNew" title="Raccourci : T">Ajouter avec détails</button></form>
+    <form class="row" data-s="taskQuick" style="margin-bottom:14px"><input class="grow" id="quick" type="text" maxlength="300" placeholder="Nouvelle tâche, puis Entrée" aria-label="Titre de la nouvelle tâche" autocomplete="off"><button class="btn primary">Ajouter</button><button type="button" class="btn" data-a="taskNew" title="Raccourci : T">Ajouter avec détails</button><button type="button" class="btn" data-a="projNew">Nouveau projet</button></form>
     <div class="filters">
       ${sel('tf', 'status', TF.status, [['todo', 'À faire'], ['done', 'Terminées'], ['all', 'Toutes']], 'Statut')}
       ${sel('tf', 'prio', TF.prio, [['', 'Toutes'], ['haute', 'Haute'], ['moyenne', 'Moyenne'], ['basse', 'Basse']], 'Priorité')}
-      ${projects.length || TF.group ? sel('tf', 'project', TF.project, [['', 'Tous'], ['-', 'Sans projet'], ...projects.map(g => [g, g])], 'Projet') + sel('tf', 'group', TF.group, [['', 'Liste simple'], ['project', 'Par projet']], 'Affichage') : ''}
+      ${projects.length ? sel('tf', 'project', TF.project, [['', 'Tous'], ['-', 'Sans projet'], ...projects.map(g => [g, g])], 'Projet') + sel('tf', 'group', TF.group, [['', 'Liste simple'], ['project', 'Par projet']], 'Affichage') : ''}
       ${sel('tf', 'tag', TF.tag, [['', 'Toutes'], ...tags.map(g => [g, '#' + g])], 'Étiquette')}
       ${sel('tf', 'period', TF.period, [['', 'Toutes'], ['today', 'Aujourd’hui'], ['week', 'Cette semaine'], ['late', 'En retard']], 'Période')}
       ${sel('tf', 'sort', TF.sort, [['due', 'Échéance'], ['prio', 'Priorité']], 'Trier par')}
     </div>
     <div class="row" style="margin-bottom:4px"><p class="muted small grow" aria-live="polite">${plural(list.length, 'tâche', 'tâches')}</p>${all.length ? '<button class="btn sm ghost danger" data-a="taskDelAll">Tout supprimer</button>' : ''}</div>
-    ${list.length ? `${TF.group === 'project' ? taskGroups(list.slice(0, TF.limit), all, t0) : `<ul class="list">${list.slice(0, TF.limit).map(t => taskRow(t, t0)).join('')}</ul>`}${list.length > TF.limit ? `<div class="row" style="justify-content:center;margin-top:12px"><button class="btn" data-a="taskMore">Afficher les ${Math.min(150, list.length - TF.limit)} suivantes</button></div>` : ''}`
+    ${list.length || (TF.group === 'project' && projects.length) ? `${TF.group === 'project' ? taskGroups(list.slice(0, TF.limit), all, t0) : `<ul class="list">${list.slice(0, TF.limit).map(t => taskRow(t, t0)).join('')}</ul>`}${list.length > TF.limit ? `<div class="row" style="justify-content:center;margin-top:12px"><button class="btn" data-a="taskMore">Afficher les ${Math.min(150, list.length - TF.limit)} suivantes</button></div>` : ''}`
       : filtered && all.length ? empty('Aucune tâche ne correspond', 'Modifiez les filtres pour en voir davantage.') : empty('Tout est fait', 'Aucune tâche en attente. Écrivez la prochaine juste au-dessus.')}
   </section>`;
 };
@@ -1254,27 +1274,155 @@ ACT.taskMore = () => { TF.limit += 150; render(); };
 SUB.taskQuick = form => {
   const title = $('#quick', form).value.trim();
   if (!title) return;
-  S.tasks.items.push({ id: uid(), title: title.slice(0, 300), prio: 'moyenne', due: '', project: TF.project && TF.project !== '-' ? TF.project : '', tags: [], note: '', done: false, doneAt: '', created: today() });
+  S.tasks.items.push({ id: uid(), title: title.slice(0, 300), prio: 'moyenne', due: '', project: TF.project && TF.project !== '-' ? TF.project : '', steps: [], tags: [], note: '', done: false, doneAt: '', created: today() });
   commit('tasks'); const q = $('#quick'); if (q) q.focus();
 };
-function taskForm(t) {
+function taskForm(t, defProject) {
   openForm({
     title: t ? 'Modifier la tâche' : 'Nouvelle tâche',
     fields: [{ n: 'title', l: 'Titre', req: true, v: t && t.title, max: 300 },
     [{ n: 'prio', l: 'Priorité', t: 'select', v: t ? t.prio : 'moyenne', opts: [['haute', 'Haute'], ['moyenne', 'Moyenne'], ['basse', 'Basse']] }, { n: 'due', l: 'Échéance (optionnelle)', t: 'date', v: t && t.due }],
-    { n: 'project', l: 'Projet (optionnel)', v: t ? t.project : (TF.project && TF.project !== '-' ? TF.project : ''), ph: 'Espagnol, Mémoire…', max: 60 },
+    { n: 'project', l: 'Projet (optionnel)', v: t ? t.project : (defProject != null ? defProject : (TF.project && TF.project !== '-' ? TF.project : '')), ph: 'Choisir ou créer un projet', max: 60, list: taskProjects() },
     { n: 'tags', l: 'Étiquettes, séparées par des virgules', v: t ? t.tags.join(', ') : '', ph: 'maison, travail' },
     { n: 'note', l: 'Note', t: 'textarea', v: t && t.note }],
     onOk(v) {
       const data = { title: v.title, prio: v.prio, due: v.due, project: v.project.trim().slice(0, 60), tags: [...new Set(v.tags.split(',').map(x => x.trim().replace(/^#/, '').slice(0, 40)).filter(Boolean))].slice(0, 10), note: v.note };
-      if (t) Object.assign(t, data); else S.tasks.items.push({ id: uid(), done: false, doneAt: '', created: today(), ...data });
+      if (t) Object.assign(t, data); else S.tasks.items.push({ id: uid(), done: false, doneAt: '', created: today(), steps: [], ...data });
       commit('tasks'); toast(t ? 'Tâche modifiée.' : 'Tâche ajoutée.');
     }
   });
 }
 ACT.taskNew = () => taskForm();
+ACT.taskNewIn = d => taskForm(null, decodeURIComponent(d.k));
 ACT.taskEdit = d => { const t = S.tasks.items.find(x => x.id === d.id); if (t) taskForm(t); };
 ACT.taskToggle = d => { const t = S.tasks.items.find(x => x.id === d.id); if (!t) return; t.done = !t.done; t.doneAt = t.done ? today() : ''; commit('tasks'); };
+/* ---------- Projets ---------- */
+const projSame = (a, b) => a.toLowerCase() === b.toLowerCase();
+ACT.projToggle = d => { const n = decodeURIComponent(d.k); if (TF.closed.has(n)) TF.closed.delete(n); else TF.closed.add(n); render(); };
+ACT.projNew = () => openForm({ title: 'Nouveau projet', ok: 'Créer', fields: [{ n: 'name', l: 'Nom du projet', req: true, max: 60, ph: 'Espagnol, Mémoire, Déménagement…' }],
+  onOk(v) {
+    if (taskProjects().some(x => projSame(x, v.name))) return 'Ce projet existe déjà.';
+    S.tasks.projects = [...(S.tasks.projects || []), v.name.slice(0, 60)]; commit('tasks'); toast('Projet créé.');
+  } });
+ACT.projEdit = d => {
+  const name = decodeURIComponent(d.k), n = S.tasks.items.filter(t => t.project === name).length;
+  dlgOpen(`<form data-s="projSave" data-k="${A(d.k)}"><h2 class="dlg-t">Projet</h2>
+    <label class="f"><span>Nom</span><input type="text" name="name" maxlength="60" value="${esc(name)}" autocomplete="off"></label>
+    <p class="err" role="alert" hidden></p>
+    <p class="small muted">${plural(n, 'tâche', 'tâches')} dans ce projet.</p>
+    <div class="row" style="margin-top:10px"><button type="button" class="btn sm danger" data-a="projDissolve" data-k="${A(d.k)}">Retirer le projet (garder les tâches)</button><button type="button" class="btn sm danger" data-a="projDelete" data-k="${A(d.k)}">Supprimer avec ses tâches</button></div>
+    <div class="row end" style="margin-top:14px"><button type="button" class="btn ghost" data-a="dlgClose">Annuler</button><button class="btn primary">Enregistrer</button></div></form>`);
+  const i = $('#dlg input[name=name]'); if (i) i.focus();
+};
+SUB.projSave = form => {
+  const old = decodeURIComponent(form.dataset.k), nn = form.elements.name.value.trim().slice(0, 60), err = $('.err', form);
+  const fail = m => { err.textContent = m; err.hidden = false; };
+  if (!nn) return fail('Donnez un nom au projet.');
+  if (nn !== old && taskProjects().some(x => projSame(x, nn) && !projSame(x, old))) return fail('Un projet porte déjà ce nom.');
+  S.tasks.items.forEach(t => { if (t.project === old) t.project = nn; });
+  S.tasks.projects = [...new Set((S.tasks.projects || []).map(x => x === old ? nn : x))];
+  if (TF.project === old) TF.project = nn;
+  if (TF.closed.delete(old)) TF.closed.add(nn);
+  AI.convs.forEach(c => { if (c.project === old) c.project = nn; }); ls.set('aiconvs', AI.convs.filter(c => c.msgs.length));
+  commit('tasks'); $('#dlg').close('ok'); if (nn !== old) toast('Projet renommé.');
+};
+ACT.projDissolve = d => {
+  const name = decodeURIComponent(d.k); $('#dlg').close('no'); if (TF.project === name) TF.project = '';
+  withUndo('tasks', `Projet « ${name} » retiré, tâches conservées.`, () => { S.tasks.items.forEach(t => { if (t.project === name) t.project = ''; }); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); });
+};
+ACT.projDelete = d => {
+  const name = decodeURIComponent(d.k), n = S.tasks.items.filter(t => t.project === name).length;
+  confirmDlg({ title: `Supprimer le projet « ${name} » ?`, msg: `Le projet et ses ${plural(n, 'tâche', 'tâches')} seront supprimés. Vous pourrez annuler juste après.`, ok: 'Supprimer', danger: true,
+    onOk() { if (TF.project === name) TF.project = ''; withUndo('tasks', `Projet « ${name} » supprimé.`, () => { S.tasks.items = S.tasks.items.filter(t => t.project !== name); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); }); } });
+};
+
+/* ---------- Fiche d'une tâche (détails et étapes) ---------- */
+function taskDetail(id, keep) {
+  focusLeave();
+  const t = S.tasks.items.find(x => x.id === id), d = $('#dlg');
+  if (!t) { if (d.open) d.close('no'); return; }
+  t.steps = t.steps || [];
+  const n = t.steps.length, dn = t.steps.filter(x => x.done).length, t0 = today(), late = !t.done && t.due && t.due < t0, y = d.scrollTop;
+  dlgOpen(`<div class="td">
+    <div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:12px"><button class="chk" style="margin-top:6px" role="checkbox" aria-checked="${t.done}" data-a="tdToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} la tâche">✓</button>
+      <h2 class="dlg-t grow${t.done ? ' muted' : ''}" style="margin:0;${t.done ? 'text-decoration:line-through;' : ''}overflow-wrap:anywhere">${esc(t.title)}</h2><button class="ic" data-a="dlgClose" aria-label="Fermer">✕</button></div>
+    <div class="meta" style="margin:12px 0 4px"><span class="chip ${t.prio}">Priorité ${t.prio}</span>${t.due ? (late ? `<span class="chip late">En retard · ${esc(fmtShort(t.due))}</span>` : `<span class="chip">Échéance : ${esc(relDay(t.due))}</span>`) : ''}${t.project ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}</div>
+    ${t.note ? `<p class="small" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0">${esc(t.note)}</p>` : ''}
+    <h3 class="td-h">Étapes${n ? ` <span class="muted small">${dn} / ${n}</span>` : ''}</h3>
+    ${n ? bar(dn / n * 100, '', `Étapes terminées : ${dn} sur ${n}`) : '<p class="muted small" style="margin-bottom:8px">Découpez la tâche en petites étapes pour avancer pas à pas.</p>'}
+    ${n ? `<ul class="list">${t.steps.map(x => `<li class="${x.done ? 'done' : ''}"><button class="chk" role="checkbox" aria-checked="${x.done}" data-a="tdStepToggle" data-id="${A(t.id)}" data-k="${A(x.id)}" aria-label="${x.done ? 'Rouvrir' : 'Terminer'} : ${esc(x.text)}">✓</button><span class="grow it-title">${esc(x.text)}</span><button class="ic" data-a="tdStepDel" data-id="${A(t.id)}" data-k="${A(x.id)}" aria-label="Supprimer l’étape ${esc(x.text)}" title="Supprimer l’étape">✕</button></li>`).join('')}</ul>` : ''}
+    <form class="row" data-s="tdStepAdd" data-id="${A(t.id)}" style="margin-top:10px"><input class="grow" id="tdsi" type="text" maxlength="200" placeholder="Ajouter une étape, puis Entrée" aria-label="Nouvelle étape" autocomplete="off"><button class="btn">Ajouter</button></form>
+    <div class="row" style="margin-top:20px">${t.done ? '' : `<button class="btn primary" data-a="focusOpen" data-id="${A(t.id)}">◎ Se concentrer</button>`}<button class="btn" data-a="tdEdit" data-id="${A(t.id)}">Modifier</button><span class="grow"></span><button class="btn ghost danger" data-a="tdDel" data-id="${A(t.id)}">Supprimer</button></div></div>`);
+  if (keep) d.scrollTop = y;
+}
+/** Modifie une tâche puis rafraîchit la liste, et la fiche ou le mode concentration qui est ouvert. */
+function tdMutate(id, fn) {
+  const t = S.tasks.items.find(x => x.id === id); if (!t) return null;
+  t.steps = t.steps || []; fn(t); commit('tasks');
+  if (FOCUS.open) focusPaint(); else taskDetail(id, true);
+  return t;
+}
+ACT.taskOpen = d => taskDetail(d.id);
+ACT.tdToggle = d => tdMutate(d.id, t => { t.done = !t.done; t.doneAt = t.done ? today() : ''; });
+ACT.tdStepToggle = d => tdMutate(d.id, t => { const x = t.steps.find(z => z.id === d.k); if (x) x.done = !x.done; });
+ACT.tdStepDel = d => tdMutate(d.id, t => { t.steps = t.steps.filter(z => z.id !== d.k); });
+SUB.tdStepAdd = form => {
+  const i = $('#tdsi', form), text = i.value.trim().slice(0, 200); if (!text) return;
+  tdMutate(form.dataset.id, t => { if (t.steps.length < 50) t.steps.push({ id: uid(), text, done: false }); });
+  const n = $('#tdsi'); if (n) n.focus();
+};
+ACT.tdEdit = d => { const t = S.tasks.items.find(x => x.id === d.id); if (t) { $('#dlg').close('no'); taskForm(t); } };
+ACT.tdDel = d => { $('#dlg').close('no'); ACT.taskDel(d); };
+
+/* ---------- Mode concentration : une tâche, ses étapes, un minuteur ---------- */
+const FOCUS = { id: '', open: false, dur: 25 * 60, left: 25 * 60, end: 0, timer: 0 };
+const fmtT = s => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+function focusStop() { if (FOCUS.timer) { clearInterval(FOCUS.timer); FOCUS.timer = 0; FOCUS.left = Math.max(1, Math.round((FOCUS.end - Date.now()) / 1000)); } }
+function focusLeave() { FOCUS.open = false; focusStop(); }
+function focusTick() {
+  const left = Math.max(0, Math.round((FOCUS.end - Date.now()) / 1000)), el = $('#ftime');
+  if (el) el.textContent = fmtT(left);
+  if (left > 0) return;
+  clearInterval(FOCUS.timer); FOCUS.timer = 0; FOCUS.left = FOCUS.dur;
+  const t = S.tasks.items.find(x => x.id === FOCUS.id);
+  toast('Session terminée. Prenez une pause !', { ms: 7000 });
+  try { if (Notification.permission === 'granted') new Notification('Session terminée', { body: t ? t.title : '' }); } catch (e) { }
+  try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); g.gain.value = .07; o.frequency.value = 660; o.start(); setTimeout(() => { o.stop(); a.close(); }, 400); } catch (e) { }
+  focusPaint();
+}
+function focusHTML(t) {
+  const st = t.steps || [], next = st.find(x => !x.done), dn = st.filter(x => x.done).length, run = !!FOCUS.timer;
+  return `<div class="focus-in"><div class="row"><span class="muted small grow" style="text-align:left">${t.project ? esc(t.project) + ' · ' : ''}Concentration</span><button class="ic" data-a="focusQuit" aria-label="Quitter le mode concentration" title="Quitter">✕</button></div>
+    <h2 class="focus-t">${esc(t.title)}</h2>${t.due ? `<p class="muted small">Échéance : ${esc(relDay(t.due))}</p>` : ''}
+    ${st.length ? `<div class="focus-next"><span class="muted small">${next ? 'Prochaine étape' : 'Toutes les étapes sont faites'}</span>${next ? `<div class="focus-step">${esc(next.text)}</div><button class="btn primary" data-a="tdStepToggle" data-id="${A(t.id)}" data-k="${A(next.id)}">Étape terminée ✓</button>` : ''}</div>${bar(dn / st.length * 100, '', `Étapes terminées : ${dn} sur ${st.length}`)}
+      <ul class="list">${st.map(x => `<li class="${x.done ? 'done' : ''}"><button class="chk" role="checkbox" aria-checked="${x.done}" data-a="tdStepToggle" data-id="${A(t.id)}" data-k="${A(x.id)}" aria-label="${x.done ? 'Rouvrir' : 'Terminer'} : ${esc(x.text)}">✓</button><span class="grow it-title">${esc(x.text)}</span></li>`).join('')}</ul>`
+      : '<p class="muted small" style="margin:14px 0 0">Cette tâche n’a pas d’étapes. Ouvrez la fiche pour en ajouter et avancer pas à pas.</p>'}
+    <div class="focus-timer"><div class="focus-time" id="ftime" role="timer" aria-label="Temps restant">${fmtT(run ? Math.max(0, Math.round((FOCUS.end - Date.now()) / 1000)) : FOCUS.left)}</div>
+      <div class="row" style="justify-content:center">${run ? '<button class="btn" data-a="focusPause">Pause</button>' : '<button class="btn primary" data-a="focusStart">Démarrer</button>'}<button class="btn ghost" data-a="focusReset">Remettre à zéro</button>
+      <select data-c="focusDur" aria-label="Durée de la session" style="width:auto"${run ? ' disabled' : ''}>${[15, 25, 45, 60].map(m => `<option value="${m}"${m * 60 === FOCUS.dur ? ' selected' : ''}>${m} min</option>`).join('')}</select></div></div>
+    <div class="row end" style="margin-top:18px"><button class="btn" data-a="taskOpen" data-id="${A(t.id)}">Fiche</button><button class="btn primary" data-a="focusFinish" data-id="${A(t.id)}">Terminer la tâche</button></div></div>`;
+}
+function focusPaint() {
+  const d = $('#dlg'), t = S.tasks.items.find(x => x.id === FOCUS.id);
+  if (!d.open || !FOCUS.open) return;
+  if (!t) { d.close('no'); return; }
+  d.innerHTML = focusHTML(t);
+}
+ACT.focusOpen = d => {
+  const t = S.tasks.items.find(x => x.id === d.id); if (!t) return;
+  if (FOCUS.id !== t.id) { focusStop(); FOCUS.id = t.id; FOCUS.left = FOCUS.dur; }
+  FOCUS.open = true; t.steps = t.steps || [];
+  dlgOpen(focusHTML(t), 'focus', () => focusLeave());
+};
+ACT.focusQuit = () => $('#dlg').close('no');
+ACT.focusStart = () => { if (FOCUS.timer) return; FOCUS.end = Date.now() + FOCUS.left * 1000; FOCUS.timer = setInterval(focusTick, 500); focusPaint(); };
+ACT.focusPause = () => { focusStop(); focusPaint(); };
+ACT.focusReset = () => { focusStop(); FOCUS.left = FOCUS.dur; focusPaint(); };
+CH.focusDur = (d, el) => { if (FOCUS.timer) return; FOCUS.dur = FOCUS.left = (+el.value || 25) * 60; focusPaint(); };
+ACT.focusFinish = d => {
+  const t = S.tasks.items.find(x => x.id === d.id); if (!t) return;
+  t.done = true; t.doneAt = today(); commit('tasks'); $('#dlg').close('no'); toast('Tâche terminée. Bien joué !');
+};
 ACT.taskDelAll = () => {
   const n = S.tasks.items.length; if (!n) return;
   confirmDlg({ title: 'Supprimer toutes les tâches ?', msg: `Les ${plural(n, 'tâche', 'tâches')} (terminées ou non, tous projets confondus) seront supprimées. Vous pourrez annuler juste après.`, ok: 'Tout supprimer', danger: true,
@@ -1908,9 +2056,9 @@ function aiSystem() {
     '2. Un plan est réaliste : charge raisonnable, jours de repos, progression par étapes, un point d’étape ou une révision régulière. Pas plus de 25 tâches : regroupe plutôt que de détailler chaque jour.',
     '3. Quand le plan est prêt, écris 2 à 4 phrases de présentation, puis UN SEUL bloc de code balisé « plan » contenant du JSON valide et rien d’autre :',
     '```plan',
-    '{"title":"…","goal":{"title":"…","desc":"…","due":"AAAA-MM-JJ","steps":["étape 1","étape 2"]},"tasks":[{"title":"…","due":"AAAA-MM-JJ","prio":"haute|moyenne|basse","note":"…"}],"habits":[{"name":"…","icon":"📖","days":[1,3,5]}],"reminders":[{"title":"…","at":"AAAA-MM-JJTHH:MM","repeat":"none|daily|weekly"}]}',
+    '{"title":"…","goal":{"title":"…","desc":"…","due":"AAAA-MM-JJ","steps":["étape 1","étape 2"]},"tasks":[{"title":"…","due":"AAAA-MM-JJ","prio":"haute|moyenne|basse","note":"…","steps":["sous-étape 1","sous-étape 2"]}],"habits":[{"name":"…","icon":"📖","days":[1,3,5]}],"reminders":[{"title":"…","at":"AAAA-MM-JJTHH:MM","repeat":"none|daily|weekly"}]}',
     '```',
-    'Détails : « days » = jours de la semaine (0 = dimanche … 6 = samedi), vide ou absent = tous les jours. Toutes les dates sont absolues et à partir d’aujourd’hui. Tous les champs sont optionnels sauf « title ». L’objectif (goal) et ses étapes servent de fil conducteur ; les tâches sont les actions datées ; les habitudes sont les pratiques récurrentes ; les rappels sont des alertes ponctuelles.',
+    'Détails : « days » = jours de la semaine (0 = dimanche … 6 = samedi), vide ou absent = tous les jours. Toutes les dates sont absolues et à partir d’aujourd’hui. Une tâche en plusieurs temps peut avoir 2 à 6 étapes courtes (« steps »). Tous les champs sont optionnels sauf « title ». L’objectif (goal) et ses étapes servent de fil conducteur ; les tâches sont les actions datées ; les habitudes sont les pratiques récurrentes ; les rappels sont des alertes ponctuelles.',
     '4. Si l’utilisateur demande une modification, renvoie le plan COMPLET mis à jour, avec le même titre : il remplace entièrement le plan précédent de la conversation (n’indique pas « idem » et ne renvoie pas seulement les changements).',
     '5. N’écris jamais de JSON en dehors du bloc plan.'
   ].join('\n') + ctx;
@@ -1969,7 +2117,7 @@ async function aiCall(msgs, system) {
 /** Valide et nettoie un plan renvoyé par le modèle (jamais de confiance aveugle). */
 function aiPlan(o) {
   const t0 = today(), now = nowStr(), d = s => validD(s) ? s : '';
-  const tasks = arr(o.tasks).filter(isObj).map(t => ({ title: str(t.title, 300).trim(), due: d(t.due) >= t0 ? d(t.due) : '', prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne', note: str(t.note, 2000), on: true })).filter(t => t.title).slice(0, 60);
+  const tasks = arr(o.tasks).filter(isObj).map(t => ({ title: str(t.title, 300).trim(), due: d(t.due) >= t0 ? d(t.due) : '', prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne', note: str(t.note, 2000), steps: lines(t.steps, 200).slice(0, 12), on: true })).filter(t => t.title).slice(0, 60);
   const g = isObj(o.goal) && str(o.goal.title).trim() ? { title: str(o.goal.title, 200).trim(), desc: str(o.goal.desc, 3000), due: d(o.goal.due), steps: lines(o.goal.steps, 200).slice(0, 30), on: true } : null;
   const habits = arr(o.habits).filter(isObj).map(h => ({ name: str(h.name, 80).trim(), icon: str(h.icon, 8) || '🌿', days: [...new Set(arr(h.days).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))], on: true })).filter(h => h.name).slice(0, 8);
   const okAt = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) && validD(s.slice(0, 10)) && +s.slice(11, 13) < 24 && +s.slice(14) < 60;
@@ -1995,7 +2143,7 @@ function planHTML(p, i) {
   const n = p.tasks.filter(x => x.on).length + p.habits.filter(x => x.on).length + p.reminders.filter(x => x.on).length + (p.goal && p.goal.on ? 1 : 0);
   let h = `<div class="plan"><div class="row"><b class="grow">${esc(p.title)}</b>${p.applied ? '<span class="chip ok">Ajouté au dashboard</span>' : ''}</div>`;
   if (p.goal) h += `<h3>Objectif</h3>${row('g', 0, p.goal.on, p.goal.title, [p.goal.due && 'échéance ' + fmtShort(p.goal.due), p.goal.steps.length && plural(p.goal.steps.length, 'étape', 'étapes')].filter(Boolean).join(' · '))}`;
-  if (p.tasks.length) h += `<h3>Tâches (${p.tasks.length})</h3><div class="plan-list">${p.tasks.map((t, k) => row('t', k, t.on, t.title, [t.due && fmtShort(t.due), t.prio !== 'moyenne' && 'priorité ' + t.prio, t.note].filter(Boolean).join(' · '))).join('')}</div>`;
+  if (p.tasks.length) h += `<h3>Tâches (${p.tasks.length})</h3><div class="plan-list">${p.tasks.map((t, k) => row('t', k, t.on, t.title, [t.due && fmtShort(t.due), t.prio !== 'moyenne' && 'priorité ' + t.prio, t.steps.length && plural(t.steps.length, 'étape', 'étapes'), t.note].filter(Boolean).join(' · '))).join('')}</div>`;
   if (p.habits.length) h += `<h3>Habitudes</h3>${p.habits.map((x, k) => row('h', k, x.on, x.icon + ' ' + x.name, x.days.length ? x.days.map(d => WD[d]).join(' ') : 'tous les jours')).join('')}`;
   if (p.reminders.length) h += `<h3>Rappels</h3>${p.reminders.map((x, k) => row('r', k, x.on, x.title, fmtAt(x.at) + (x.repeat === 'daily' ? ' · chaque jour' : x.repeat === 'weekly' ? ' · chaque semaine' : ''))).join('')}`;
   if (!p.applied) { const proj = aiProject(AI.conv, p), old = S.tasks.items.filter(t => t.project === proj && !t.done).length; if (old) h += `<p class="small muted" style="margin-top:10px">Remplace les ${plural(old, 'tâche non terminée', 'tâches non terminées')} du projet « ${esc(proj)} » (les tâches terminées sont conservées).</p>`; }
@@ -2090,7 +2238,7 @@ ACT.aiApply = d => {
   const doneTitles = new Set(S.tasks.items.filter(t => t.project === tag && t.done).map(t => norm(t.title)));
   replaced = S.tasks.items.filter(t => t.project === tag && !t.done).length;
   S.tasks.items = S.tasks.items.filter(t => !(t.project === tag && !t.done));
-  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, tags: [], note: t.note, done: false, doneAt: '', created: t0 }); n++; }
+  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, steps: (t.steps || []).map(x => ({ id: uid(), text: x, done: false })), tags: [], note: t.note, done: false, doneAt: '', created: t0 }); n++; }
   /* Objectif : mis à jour s'il existe déjà (les étapes déjà cochées restent cochées). */
   if (p.goal && p.goal.on) {
     const g = S.goals.items.find(x => x.cat === tag.slice(0, 40) || norm(x.title) === norm(p.goal.title));
