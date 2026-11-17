@@ -178,3 +178,7 @@ Les étapes d'un objectif (section Objectifs) peuvent regrouper plusieurs tâche
 ## Finition « premium » (v1.10)
 
 Verre plus profond (flou et saturation renforcés, reflets de bord), aurore lente en arrière-plan avec grille fine, reflet lumineux qui suit le curseur sur les cartes, dégradés indigo → cyan sur les boutons, barres et anneaux, typographie plus nette avec micro-étiquettes en police mono. Le mode clair et le mobile suivent, et les animations s'arrêtent avec « réduire les animations ». Tout est dans le bloc CSS « FINITION PREMIUM » : le retirer rétablit l'ancien rendu.
+
+## Échelle « XL » (v1.11)
+
+Interface agrandie : titres géants (accueil, pages de tâche, minuteur de concentration), cartes plus amples, boutons et champs de 46–50 px, chiffres XXL dans les indicateurs, barre latérale élargie, éditeur de notes plus aéré. Le bloc CSS « ÉCHELLE XL » est le dernier du fichier : le retirer ramène la taille précédente.
