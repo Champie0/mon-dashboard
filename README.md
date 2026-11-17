@@ -166,3 +166,7 @@ La fiche d'une tâche, le mode concentration et chaque projet s'ouvrent désorma
 - **Page de projet** : notes du projet, avancement, ajout rapide de tâches, tâches à faire et terminées.
 - **Concentration** : minuteur, prochaine étape et notes côte à côte.
 - Les anciennes notes texte des tâches sont reprises automatiquement dans le nouvel éditeur.
+
+## Mini-groupes liés à un objectif (v1.8)
+
+Dans la page d'un projet, **Nouveau groupe** crée un mini-groupe de tâches (ex. « Grammaire » dans « Espagnol ») que l'on peut lier à un objectif. Quand toutes les tâches du groupe sont terminées, le dashboard propose de cocher l'objectif comme atteint. La page Objectifs affiche les groupes liés et leur avancement, et une tâche peut changer de groupe depuis sa page.

@@ -395,6 +395,10 @@ kbd{display:inline-block;min-width:1.7em;text-align:center;padding:0 6px;border:
 .prop{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2)}
 .prop select,.prop input{width:auto;min-width:150px}
 .late-t{color:#ff9a9a}
+.grp{margin-top:12px;padding:12px 14px;border-radius:var(--r-lg);background:var(--g-1);border:1px solid var(--line)}
+.grp-h{gap:6px}
+.grp a.chip{text-decoration:none}
+.grp-done summary{cursor:pointer;margin:8px 0 2px}
 .page-cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:22px;align-items:start}
 .page-side{position:sticky;top:90px}
 @media (max-width:900px){.page-cols{grid-template-columns:1fr}.page-side{position:static}}
@@ -565,7 +569,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.7.1', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.8.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -643,7 +647,7 @@ const HABIT_COLORS = [['#6E7B2F', 'Olive'], ['#B4502C', 'Terracotta'], ['#C8892B
 const HABIT_ICONS = ['💧', '📖', '🏃', '🧘', '🛌', '🥗', '✍️', '🎸', '🧹', '💊', '🌿', '☀️', '🚶', '🎨', '💻', '📵'];
 const DEFAULTS = {
   home: () => ({ v: 1, quotes: ['Un pas après l’autre, mais un pas chaque jour.', 'Ce qui est fait aujourd’hui n’est plus à faire demain.', 'La régularité bat l’intensité.', 'Commence par le plus important, pas par le plus facile.', 'Mieux vaut fait que parfait.', 'Chaque jour compte, surtout celui-ci.'], top: [], firstUse: today(), lastExport: null }),
-  tasks: () => ({ v: 1, items: [], projects: [], pnotes: {} }),
+  tasks: () => ({ v: 1, items: [], projects: [], pnotes: {}, groups: [] }),
   habits: () => ({ v: 1, items: [] }),
   goals: () => ({ v: 1, items: [] }),
   finance: () => ({
@@ -692,9 +696,9 @@ const NORMALIZE = {
   tasks(r) {
     need(Array.isArray(r.items));
     return {
-      v: 1, projects: [...new Set(lines(r.projects, 60))].slice(0, 100), pnotes: Object.fromEntries(Object.entries(isObj(r.pnotes) ? r.pnotes : {}).slice(0, 200).map(([k, v]) => [str(k, 60), cleanDoc(str(v, 60000))]).filter(([k, v]) => k && v)), items: r.items.filter(t => isObj(t) && str(t.title).trim()).map(t => ({
+      v: 1, projects: [...new Set(lines(r.projects, 60))].slice(0, 100), groups: arr(r.groups).filter(g => isObj(g) && str(g.name).trim()).map(g => ({ id: str(g.id, 40) || uid(), name: str(g.name, 60).trim(), project: str(g.project, 60), goal: str(g.goal, 40), asked: !!g.asked })).slice(0, 300), pnotes: Object.fromEntries(Object.entries(isObj(r.pnotes) ? r.pnotes : {}).slice(0, 200).map(([k, v]) => [str(k, 60), cleanDoc(str(v, 60000))]).filter(([k, v]) => k && v)), items: r.items.filter(t => isObj(t) && str(t.title).trim()).map(t => ({
         id: str(t.id, 40) || uid(), title: str(t.title, 300).trim(), prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne',
-        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), steps: arr(t.steps).filter(x => isObj(x) && str(x.text).trim()).map(x => ({ id: str(x.id, 40) || uid(), text: str(x.text, 200).trim(), done: !!x.done })).slice(0, 50), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), doc: cleanDoc(str(t.doc, 60000)), done: !!t.done,
+        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), group: str(t.group, 40), steps: arr(t.steps).filter(x => isObj(x) && str(x.text).trim()).map(x => ({ id: str(x.id, 40) || uid(), text: str(x.text, 200).trim(), done: !!x.done })).slice(0, 50), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), doc: cleanDoc(str(t.doc, 60000)), done: !!t.done,
         doneAt: validD(t.doneAt) ? t.doneAt : '', created: validD(t.created) ? t.created : today()
       }))
     };
@@ -806,6 +810,7 @@ function commit(m, o = {}) {
   if (session) { dirty.add(m); saveDirty(); schedulePush(m); }
   setSync();
   if (!o.silent) render();
+  if (m === 'tasks') setTimeout(groupCheck, 120);
 }
 function withUndo(m, msg, mutate) {
   const snap = JSON.stringify(S[m]);
@@ -1303,7 +1308,7 @@ function taskRow(t, t0, compact) {
     <button class="chk" role="checkbox" aria-checked="${t.done}" data-a="taskToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} : ${esc(t.title)}">✓</button>
     <div class="grow"><div class="it-title"><button class="it-open" data-a="taskOpen" data-id="${A(t.id)}" title="Voir la fiche">${esc(t.title)}</button></div><div class="meta"><span class="chip ${t.prio}">Priorité ${t.prio}</span>${(t.steps || []).length ? `<span class="chip">${t.steps.filter(x => x.done).length}/${t.steps.length} étapes</span>` : ''}
       ${t.due ? (late ? `<span class="chip late">En retard · ${esc(fmtShort(t.due))}</span>` : `<span>Échéance : ${esc(relDay(t.due))}</span>`) : ''}
-      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${!compact && docOf(t) ? (() => { const x = docText(docOf(t)); return `<span>Note : ${esc(x.slice(0, 70))}${x.length > 70 ? '…' : ''}</span>`; })() : ''}</div></div>
+      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.group && !compact ? (() => { const g = (S.tasks.groups || []).find(x => x.id === t.group); return g ? `<span class="chip">▸ ${esc(g.name)}</span>` : ''; })() : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${!compact && docOf(t) ? (() => { const x = docText(docOf(t)); return `<span>Note : ${esc(x.slice(0, 70))}${x.length > 70 ? '…' : ''}</span>`; })() : ''}</div></div>
     ${compact ? '' : `${t.done ? '' : `<button class="ic" data-a="focusOpen" data-id="${A(t.id)}" aria-label="Se concentrer sur ${esc(t.title)}" title="Se concentrer">◎</button>`}<button class="ic" data-a="taskEdit" data-id="${A(t.id)}" aria-label="Modifier ${esc(t.title)}" title="Modifier">✎</button><button class="ic" data-a="taskDel" data-id="${A(t.id)}" aria-label="Supprimer ${esc(t.title)}" title="Supprimer">✕</button>`}</li>`;
 }
 const sel = (c, k, v, opts, label) => `<div><label for="s_${c}_${k}">${label}</label><select id="s_${c}_${k}" data-c="${c}" data-k="${k}">${opts.map(([val, lab]) => `<option value="${esc(val)}"${val === v ? ' selected' : ''}>${esc(lab)}</option>`).join('')}</select></div>`;
@@ -1371,6 +1376,54 @@ ACT.taskNewIn = d => taskForm(null, decodeURIComponent(d.k));
 ACT.taskEdit = d => { const t = S.tasks.items.find(x => x.id === d.id); if (t) taskForm(t); };
 ACT.taskToggle = d => { const t = S.tasks.items.find(x => x.id === d.id); if (!t) return; t.done = !t.done; t.doneAt = t.done ? today() : ''; commit('tasks'); };
 /* ---------- Projets ---------- */
+/* ---------- Mini-groupes de tâches (dans un projet, liés à un objectif) ---------- */
+const groupsOf = name => (S.tasks.groups || []).filter(g => g.project === name);
+const groupTasks = g => S.tasks.items.filter(t => t.group === g.id && t.project === g.project);
+const goalOfGroup = g => g.goal ? S.goals.items.find(x => x.id === g.goal) : null;
+/** Quand toutes les tâches d'un groupe sont faites, propose de cocher l'objectif lié. */
+function groupCheck() {
+  let changed = false, ask = null;
+  for (const g of S.tasks.groups || []) {
+    const ts = groupTasks(g), full = ts.length > 0 && ts.every(t => t.done);
+    if (!full && g.asked) { g.asked = false; changed = true; }
+    const goal = goalOfGroup(g);
+    if (full && goal && goal.status !== 'done' && !g.asked && !ask) ask = { g, goal };
+  }
+  if (ask && $('#dlg').open) { setTimeout(groupCheck, 800); ask = null; }
+  if (ask) { ask.g.asked = true; changed = true; }
+  if (changed) commit('tasks', { silent: true });
+  if (ask) confirmDlg({ title: 'Objectif atteint ?', msg: `Toutes les tâches du groupe « ${ask.g.name} » sont terminées. Cocher l’objectif « ${ask.goal.title} » comme atteint ?`, ok: 'Cocher l’objectif', cancel: 'Pas maintenant',
+    onOk() { const gl = goalOfGroup(ask.g); if (gl) { gl.status = 'done'; commit('goals'); toast('Objectif atteint. Bravo !'); } } });
+}
+const goalOpts = cur => [['', 'Aucun objectif'], ...S.goals.items.filter(x => x.status !== 'done' || x.id === cur).map(x => [x.id, x.title])];
+function groupForm(project, g) {
+  openForm({ title: g ? 'Modifier le groupe' : 'Nouveau groupe', ok: g ? 'Enregistrer' : 'Créer', note: S.goals.items.length ? '' : 'Astuce : créez d’abord un objectif dans la section Objectifs pour pouvoir le lier à ce groupe.',
+    fields: [{ n: 'name', l: 'Nom du groupe', req: true, max: 60, v: g && g.name, ph: 'Grammaire, Vocabulaire…' }, { n: 'goal', l: 'Objectif à cocher quand tout est fait', t: 'select', v: g ? g.goal : '', opts: goalOpts(g && g.goal) }],
+    extra: g ? `<button type="button" class="btn ghost danger" data-a="grpDel" data-id="${A(g.id)}">Supprimer le groupe</button>` : '',
+    onOk(v) {
+      if (groupsOf(project).some(x => x !== g && projSame(x.name, v.name))) return 'Ce groupe existe déjà dans ce projet.';
+      if (g) { g.name = v.name.slice(0, 60); if (g.goal !== v.goal) g.asked = false; g.goal = v.goal; }
+      else (S.tasks.groups = S.tasks.groups || []).push({ id: uid(), name: v.name.slice(0, 60), project, goal: v.goal, asked: false });
+      commit('tasks'); toast(g ? 'Groupe modifié.' : 'Groupe créé.');
+    } });
+}
+ACT.grpNew = d => groupForm(decodeURIComponent(d.k));
+ACT.grpEdit = d => { const g = (S.tasks.groups || []).find(x => x.id === d.id); if (g) groupForm(g.project, g); };
+ACT.grpDel = d => { $('#dlg').close('no'); withUndo('tasks', 'Groupe supprimé, tâches conservées.', () => { S.tasks.groups = S.tasks.groups.filter(x => x.id !== d.id); S.tasks.items.forEach(t => { if (t.group === d.id) t.group = ''; }); }); };
+SUB.grpQuick = form => {
+  const g = (S.tasks.groups || []).find(x => x.id === form.dataset.id), v = form.elements.t.value.trim().slice(0, 300); if (!g || !v) return;
+  S.tasks.items.push({ id: uid(), title: v, prio: 'moyenne', due: '', project: g.project, group: g.id, steps: [], tags: [], note: '', doc: '', done: false, doneAt: '', created: today() });
+  commit('tasks'); const i = $(`#view form[data-id="${CSS.escape(g.id)}"] input[name=t]`); if (i) i.focus();
+};
+function grpBlock(g, t0) {
+  const ts = groupTasks(g), done = ts.filter(t => t.done).length, goal = goalOfGroup(g), open = ts.filter(t => !t.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1), fin = ts.filter(t => t.done);
+  return `<div class="grp"><div class="row grp-h"><b class="grow">${esc(g.name)}</b><span class="muted small">${done}/${ts.length}</span><button class="ic" data-a="grpEdit" data-id="${A(g.id)}" aria-label="Modifier le groupe ${esc(g.name)}" title="Modifier le groupe">✎</button></div>
+    ${goal ? `<div class="meta"><a class="chip${goal.status === 'done' ? ' ok' : ''}" href="#objectifs" title="Voir l’objectif">${goal.status === 'done' ? '✓ ' : '🎯 '}${esc(goal.title)}</a></div>` : ''}
+    ${ts.length ? bar(Math.round(done / ts.length * 100), '', `Avancement de ${g.name}`) : ''}
+    <form class="row" data-s="grpQuick" data-id="${A(g.id)}" style="margin:8px 0"><input class="grow" type="text" name="t" maxlength="300" placeholder="Ajouter dans ce groupe" aria-label="Nouvelle tâche dans ${A(g.name)}" autocomplete="off"><button class="btn sm">+</button></form>
+    ${open.length ? `<ul class="list">${open.map(t => taskRow(t, t0, true)).join('')}</ul>` : ''}${fin.length ? `<details class="grp-done"><summary class="muted small">Terminées (${fin.length})</summary><ul class="list">${fin.map(t => taskRow(t, t0, true)).join('')}</ul></details>` : ''}</div>`;
+}
+
 const projSame = (a, b) => a.toLowerCase() === b.toLowerCase();
 ACT.projToggle = d => { const n = decodeURIComponent(d.k); if (TF.closed.has(n)) TF.closed.delete(n); else TF.closed.add(n); render(); };
 ACT.projNew = () => openForm({ title: 'Nouveau projet', ok: 'Créer', fields: [{ n: 'name', l: 'Nom du projet', req: true, max: 60, ph: 'Espagnol, Mémoire, Déménagement…' }],
@@ -1394,6 +1447,7 @@ SUB.projSave = form => {
   if (!nn) return fail('Donnez un nom au projet.');
   if (nn !== old && taskProjects().some(x => projSame(x, nn) && !projSame(x, old))) return fail('Un projet porte déjà ce nom.');
   S.tasks.items.forEach(t => { if (t.project === old) t.project = nn; });
+  (S.tasks.groups || []).forEach(g => { if (g.project === old) g.project = nn; });
   S.tasks.projects = [...new Set((S.tasks.projects || []).map(x => x === old ? nn : x))];
   if (S.tasks.pnotes && S.tasks.pnotes[old] != null && nn !== old) { S.tasks.pnotes[nn] = S.tasks.pnotes[old]; delete S.tasks.pnotes[old]; }
   if (PAGE && PAGE.type === 'projet' && PAGE.key === old) { PAGE.key = nn; history.replaceState(null, '', pageUrl('projet', nn)); }
@@ -1404,12 +1458,12 @@ SUB.projSave = form => {
 };
 ACT.projDissolve = d => {
   const name = decodeURIComponent(d.k); $('#dlg').close('no'); if (PAGE && PAGE.type === 'projet') location.hash = '#taches'; if (TF.project === name) TF.project = '';
-  withUndo('tasks', `Projet « ${name} » retiré, tâches conservées.`, () => { S.tasks.items.forEach(t => { if (t.project === name) t.project = ''; }); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); if (S.tasks.pnotes) delete S.tasks.pnotes[name]; });
+  withUndo('tasks', `Projet « ${name} » retiré, tâches conservées.`, () => { S.tasks.items.forEach(t => { if (t.project === name) { t.project = ''; t.group = ''; } }); S.tasks.groups = (S.tasks.groups || []).filter(g => g.project !== name); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); if (S.tasks.pnotes) delete S.tasks.pnotes[name]; });
 };
 ACT.projDelete = d => {
   const name = decodeURIComponent(d.k), n = S.tasks.items.filter(t => t.project === name).length;
   confirmDlg({ title: `Supprimer le projet « ${name} » ?`, msg: `Le projet et ses ${plural(n, 'tâche', 'tâches')} seront supprimés. Vous pourrez annuler juste après.`, ok: 'Supprimer', danger: true,
-    onOk() { if (PAGE && PAGE.type === 'projet') location.hash = '#taches'; if (TF.project === name) TF.project = ''; withUndo('tasks', `Projet « ${name} » supprimé.`, () => { S.tasks.items = S.tasks.items.filter(t => t.project !== name); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); if (S.tasks.pnotes) delete S.tasks.pnotes[name]; }); } });
+    onOk() { if (PAGE && PAGE.type === 'projet') location.hash = '#taches'; if (TF.project === name) TF.project = ''; withUndo('tasks', `Projet « ${name} » supprimé.`, () => { S.tasks.items = S.tasks.items.filter(t => t.project !== name); S.tasks.groups = (S.tasks.groups || []).filter(g => g.project !== name); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); if (S.tasks.pnotes) delete S.tasks.pnotes[name]; }); } });
 };
 
 /* ---------- Éditeur de notes (texte riche simple, enregistrement automatique) ---------- */
@@ -1483,6 +1537,7 @@ function taskPage(t) {
       <label class="prop"><span>Priorité</span><select data-c="tpPrio" data-id="${A(t.id)}">${['haute', 'moyenne', 'basse'].map(p => `<option value="${p}"${t.prio === p ? ' selected' : ''}>${prioL[p]}</option>`).join('')}</select></label>
       <label class="prop"><span>Échéance${late ? ' <b class="late-t">· en retard</b>' : ''}</span><input type="date" data-c="tpDue" data-id="${A(t.id)}" value="${A(t.due)}"></label>
       <label class="prop"><span>Projet</span><input type="text" list="dl_tp" data-c="tpProj" data-id="${A(t.id)}" value="${A(t.project)}" maxlength="60" placeholder="Aucun" autocomplete="off"><datalist id="dl_tp">${taskProjects().map(o => `<option value="${A(o)}">`).join('')}</datalist></label>
+      ${t.project && groupsOf(t.project).length ? `<label class="prop"><span>Groupe</span><select data-c="tpGroup" data-id="${A(t.id)}"><option value="">Aucun</option>${groupsOf(t.project).map(g => `<option value="${A(g.id)}"${t.group === g.id ? ' selected' : ''}>${esc(g.name)}</option>`).join('')}</select></label>` : ''}
       ${t.tags.length ? `<div class="prop"><span>Étiquettes</span><div class="meta">${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}</div></div>` : ''}</div>
     <div class="page-cols"><section class="page-main"><h3 class="td-h" style="margin-top:0">Notes</h3>${edHTML('task', t.id, docOf(t))}</section>
       <aside class="page-side"><div class="hud">${stepsHTML(t)}</div>
@@ -1490,16 +1545,19 @@ function taskPage(t) {
 }
 function projectPage(name) {
   if (!taskProjects().includes(name)) return missingPage('Ce projet est introuvable.');
+  const groups = groupsOf(name), gids = new Set(groups.map(g => g.id));
   const all = S.tasks.items.filter(t => t.project === name), done = all.filter(t => t.done).length, pct = all.length ? Math.round(done / all.length * 100) : 0, t0 = today();
-  const open = all.filter(t => !t.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1), fin = all.filter(t => t.done);
+  const open = all.filter(t => !t.done && !gids.has(t.group)).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1), fin = all.filter(t => t.done && !gids.has(t.group));
   return `<div class="page">${crumbs([['Tâches', '#taches'], [name]])}
     <div class="page-head"><h2 class="page-title grow">${esc(name)}</h2><button class="btn" data-a="projEdit" data-k="${A(encodeURIComponent(name))}">Modifier le projet</button></div>
     <div class="page-props"><div class="prop" style="min-width:240px;flex:1"><span>Avancement : ${done} sur ${all.length} terminée${done > 1 ? 's' : ''}</span>${bar(pct, '', `Avancement : ${pct} %`)}</div></div>
     <div class="page-cols"><section class="page-main"><h3 class="td-h" style="margin-top:0">Notes du projet</h3>${edHTML('project', name, (S.tasks.pnotes || {})[name] || '')}</section>
       <aside class="page-side"><div class="hud"><h3 class="td-h" style="margin-top:0">Tâches</h3>
         <form class="row" data-s="projQuick" data-k="${A(encodeURIComponent(name))}"><input class="grow" type="text" name="t" maxlength="300" placeholder="Ajouter une tâche, puis Entrée" aria-label="Nouvelle tâche" autocomplete="off"><button class="btn">Ajouter</button></form>
-        ${open.length ? `<ul class="list" style="margin-top:8px">${open.map(t => taskRow(t, t0, true)).join('')}</ul>` : '<p class="muted small" style="margin-top:10px">Aucune tâche à faire dans ce projet.</p>'}
-        ${fin.length ? `<h3 class="td-h">Terminées (${fin.length})</h3><ul class="list">${fin.map(t => taskRow(t, t0, true)).join('')}</ul>` : ''}</div></aside></div></div>`;
+        ${open.length ? `<ul class="list" style="margin-top:8px">${open.map(t => taskRow(t, t0, true)).join('')}</ul>` : (!groups.length ? '<p class="muted small" style="margin-top:10px">Aucune tâche à faire dans ce projet.</p>' : '')}
+        ${fin.length ? `<h3 class="td-h">Terminées (${fin.length})</h3><ul class="list">${fin.map(t => taskRow(t, t0, true)).join('')}</ul>` : ''}</div>
+        <div class="row" style="margin:16px 0 8px"><h3 class="td-h grow" style="margin:0">Mini-groupes</h3><button class="btn sm" data-a="grpNew" data-k="${A(encodeURIComponent(name))}">Nouveau groupe</button></div>
+        ${groups.length ? groups.map(g => grpBlock(g, t0)).join('') : '<p class="muted small">Regroupez des tâches (ex. « Grammaire ») et liez le groupe à un objectif : il sera proposé comme atteint quand tout est fait.</p>'}</aside></div></div>`;
 }
 function focusPage(t) {
   const st = t.steps || [], next = st.find(x => !x.done), dn = st.filter(x => x.done).length, run = !!FOCUS.timer;
@@ -1539,7 +1597,8 @@ SUB.tdStepAdd = form => {
 INP.tpTitle = (d, el) => { const t = S.tasks.items.find(x => x.id === d.id), v = el.value.trim(); if (t && v) { t.title = v.slice(0, 300); commit('tasks', { silent: true }); } pendingRender = true; };
 CH.tpPrio = (d, el) => tdMutate(d.id, t => { t.prio = el.value; });
 CH.tpDue = (d, el) => tdMutate(d.id, t => { t.due = validD(el.value) ? el.value : ''; });
-CH.tpProj = (d, el) => tdMutate(d.id, t => { t.project = el.value.trim().slice(0, 60); });
+CH.tpProj = (d, el) => tdMutate(d.id, t => { t.project = el.value.trim().slice(0, 60); if (!groupsOf(t.project).some(g => g.id === t.group)) t.group = ''; });
+CH.tpGroup = (d, el) => tdMutate(d.id, t => { t.group = el.value; });
 SUB.projQuick = form => {
   const name = decodeURIComponent(form.dataset.k), v = form.elements.t.value.trim().slice(0, 300); if (!v) return;
   S.tasks.items.push({ id: uid(), title: v, prio: 'moyenne', due: '', project: name, steps: [], tags: [], note: '', doc: '', done: false, doneAt: '', created: today() });
@@ -1688,7 +1747,7 @@ function goalCard(g) {
   return `<section class="hud"${g.status === 'active' ? '' : ' style="opacity:.8"'}>
     <div class="row" style="align-items:flex-start;flex-wrap:nowrap">${ring(p, 58, 5, `Progression : ${p} %`)}
       <div class="grow"><h2 style="margin-bottom:4px">${esc(g.title)}</h2>
-      <div class="meta"><span class="chip${g.status === 'done' ? ' ok' : ''}">${GSTAT[g.status]}</span><span class="chip">${esc(g.cat)}</span>${g.due ? (late ? `<span class="chip late">Échéance dépassée · ${esc(fmtShort(g.due))}</span>` : `<span>Échéance : ${esc(fmtD(g.due))}</span>`) : ''}</div></div>
+      <div class="meta"><span class="chip${g.status === 'done' ? ' ok' : ''}">${GSTAT[g.status]}</span><span class="chip">${esc(g.cat)}</span>${(S.tasks.groups || []).filter(x => x.goal === g.id).map(x => { const ts = groupTasks(x); return `<a class="chip" href="${A(pageUrl('projet', x.project))}" title="Groupe de tâches lié">▸ ${esc(x.name)} · ${ts.filter(t => t.done).length}/${ts.length}</a>`; }).join('')}${g.due ? (late ? `<span class="chip late">Échéance dépassée · ${esc(fmtShort(g.due))}</span>` : `<span>Échéance : ${esc(fmtD(g.due))}</span>`) : ''}</div></div>
       <button class="ic" data-a="goalEdit" data-id="${A(g.id)}" aria-label="Modifier ${esc(g.title)}" title="Modifier">✎</button><button class="ic" data-a="goalDel" data-id="${A(g.id)}" aria-label="Supprimer ${esc(g.title)}" title="Supprimer">✕</button></div>
     ${g.desc ? `<p class="small" style="margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(g.desc)}</p>` : ''}
     <ul class="list" style="margin-top:8px">${g.steps.map(s => `<li class="${s.done ? 'done' : ''}"><button class="chk" role="checkbox" aria-checked="${s.done}" data-a="stepToggle" data-id="${A(g.id)}" data-k="${A(s.id)}" aria-label="${esc(s.text)}">✓</button><span class="grow it-title">${esc(s.text)}</span><button class="ic" data-a="stepDel" data-id="${A(g.id)}" data-k="${A(s.id)}" aria-label="Supprimer l’étape ${esc(s.text)}">✕</button></li>`).join('')}</ul>
