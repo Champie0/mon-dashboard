@@ -359,6 +359,32 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
 .sw[aria-checked=true] i::after{transform:translateX(18px)}
 kbd{display:inline-block;min-width:1.7em;text-align:center;padding:0 6px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:7px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11.5px;background:var(--g-2)}
 
+/* ---------- Assistant IA ---------- */
+.ai-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+#aichat{display:flex;flex-direction:column;gap:14px;min-height:220px}
+.ai-m{max-width:min(720px,92%);padding:11px 16px;border-radius:20px;line-height:1.55;overflow-wrap:anywhere;scroll-margin-top:96px}
+.ai-m.user{align-self:flex-end;background:var(--accent-soft);border:1px solid var(--line-2);border-bottom-right-radius:8px}
+.ai-m.assistant{align-self:flex-start;background:var(--g-0);border:1px solid var(--line);border-bottom-left-radius:8px;box-shadow:var(--hl)}
+.ai-m.wide{max-width:100%;width:100%}
+.ai-m p+p{margin-top:8px}
+.ai-sugg{display:flex;flex-wrap:wrap;gap:8px}
+.ai-sugg .btn{height:auto;min-height:30px;padding:6px 14px;white-space:normal;text-align:left;border-radius:16px}
+.dots{display:inline-flex;gap:4px;padding:5px 2px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--text-2);animation:blink 1.1s ease-in-out infinite}
+.dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}
+.plan{margin-top:12px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-lg);background:rgba(0,0,0,.16)}
+:root.light .plan{background:rgba(255,255,255,.45)}
+.plan h3{font:600 11.5px var(--font);letter-spacing:.05em;text-transform:uppercase;color:var(--text-2);margin:14px 0 4px}
+.plan-list{max-height:320px;overflow:auto}
+.plan-it{display:flex;gap:10px;align-items:flex-start;padding:8px 2px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13.5px}
+.plan-it input{margin-top:3px;flex:none}
+.plan-it b{font-weight:500}
+.plan-it small{display:block;color:var(--text-2);font-size:12px;margin-top:1px}
+.ai-in{position:sticky;bottom:12px;z-index:15;display:flex;gap:10px;align-items:flex-end;padding:10px 10px 10px 18px;border-radius:var(--r-xl);margin-top:16px}
+.ai-in textarea{min-height:46px;max-height:160px;resize:none;border:0;background:transparent;box-shadow:none;padding:12px 0;field-sizing:content;padding-left:0}
+.ai-in textarea:focus,.ai-in textarea:focus-visible{border:0;box-shadow:none;outline:none}
+.ai-in:focus-within{border-color:var(--line-2)}
+
 /* ---------- Mouvement (désactivable dans Réglages) ---------- */
 @keyframes rise{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
 @keyframes fade{from{opacity:0}}
@@ -407,6 +433,7 @@ kbd{display:inline-block;min-width:1.7em;text-align:center;padding:0 6px;border:
   #view{padding:14px 12px 0}
   .notice{margin:0 12px}
   #toasts{bottom:calc(90px + env(safe-area-inset-bottom))}
+  .ai-in{bottom:calc(90px + env(safe-area-inset-bottom))}
   .hero{grid-template-columns:1fr;justify-items:center;text-align:center}
   .quote{border-left:0;padding-left:0;margin-left:auto;margin-right:auto}
   .hero .row{justify-content:center}
@@ -947,6 +974,7 @@ const SECTIONS = [
   { id: 'finances', label: 'Finances', icon: 'M3 20h18M6 20V10M11 20V5M16 20v-8M21 20v-5' },
   { id: 'journal', label: 'Journal', icon: 'M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 8h6M9 12h6' },
   { id: 'rappels', label: 'Rappels', icon: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0' },
+  { id: 'assistant', label: 'Assistant IA', icon: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z' },
   { id: 'reglages', label: 'Réglages', icon: 'M4 7h10M18 7h2M4 17h2M10 17h10M16 5v4M8 15v4' }
 ];
 SECTIONS.forEach((s, i) => s.no = pad(i + 1));
@@ -1025,7 +1053,7 @@ document.addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return;
   const k = e.key;
   if (k === '?') ACT.help();
-  else if (/^[1-8]$/.test(k)) go(SECTIONS[k - 1].id);
+  else if (/^[1-9]$/.test(k)) go(SECTIONS[k - 1].id);
   else if (k === 't' || k === 'T') ACT.taskNew();
   else if (k === 'd' || k === 'D') ACT.txNew();
   else if (k === 'h' || k === 'H') safe(checkNextHabit);
@@ -1038,7 +1066,7 @@ ACT.corruptOk = d => { corrupt.delete(d.id); ls.del('corrupt:' + d.id); render()
 ACT.corruptGet = d => { let raw = ''; try { raw = localStorage.getItem(LS + 'corrupt:' + d.id) || ''; } catch (e) { } download(`mon-dashboard-${d.id}-illisible.txt`, raw); };
 ACT.exportLater = () => { exportSnooze = true; render(); };
 ACT.help = () => infoDlg('Aide et raccourcis clavier', `<table><tbody>
-  <tr><td><kbd>1</kbd> à <kbd>8</kbd></td><td>Changer de section (Accueil, Tâches, Habitudes…)</td></tr>
+  <tr><td><kbd>1</kbd> à <kbd>9</kbd></td><td>Changer de section (Accueil, Tâches, Habitudes…)</td></tr>
   <tr><td><kbd>T</kbd></td><td>Ajouter une tâche</td></tr>
   <tr><td><kbd>D</kbd></td><td>Ajouter une dépense</td></tr>
   <tr><td><kbd>H</kbd></td><td>Cocher la prochaine habitude du jour</td></tr>
@@ -1764,6 +1792,217 @@ function tick() {
    RÉGLAGES, SAUVEGARDE ET RESTAURATION
    ===================================================================== */
 const sw = (k, on, label, help) => `<button class="sw" role="switch" aria-checked="${on}" data-a="pref" data-k="${k}"><span>${label}<br><span class="muted small">${help}</span></span><i aria-hidden="true"></i></button>`;
+/* =====================================================================
+   ASSISTANT IA — crée un planning à partir d'une demande en langage naturel.
+   Tout se passe en ligne (Google Gemini, Anthropic ou OpenRouter) : aucun
+   modèle ne tourne sur l'ordinateur, la carte graphique n'est pas utilisée.
+   La clé API reste dans ce navigateur (md:ai) : jamais synchronisée avec le
+   compte, jamais incluse dans l'export JSON. Le plan proposé n'est ajouté
+   aux tâches, objectifs, habitudes et rappels qu'après validation.
+   ===================================================================== */
+const AI_PROVIDERS = {
+  gemini: { label: 'Google Gemini (offre gratuite)', model: 'gemini-2.5-flash', link: 'https://aistudio.google.com/apikey' },
+  anthropic: { label: 'Anthropic Claude', model: 'claude-sonnet-5-5', link: 'https://console.anthropic.com/settings/keys' },
+  openrouter: { label: 'OpenRouter (plusieurs modèles)', model: 'google/gemini-2.5-flash', link: 'https://openrouter.ai/keys' }
+};
+const aiCfg = () => {
+  const c = ls.get('ai', {}) || {};
+  return { provider: AI_PROVIDERS[c.provider] ? c.provider : 'gemini', key: str(c.key, 400).trim(), model: str(c.model, 100).trim(), ctx: c.ctx !== false };
+};
+const AI = {
+  msgs: arr(ls.get('aichat', [])).filter(m => isObj(m) && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
+    .map(m => ({ role: m.role, text: str(m.text, 12000), raw: str(m.raw, 20000), plan: isObj(m.plan) ? m.plan : null })).slice(-40),
+  busy: false, draft: '', err: ''
+};
+const aiSave = () => ls.set('aichat', AI.msgs);
+const AI_SUGGEST = [
+  'Je veux apprendre l’espagnol en 3 mois, 30 minutes par jour.',
+  'Prépare-moi un semi-marathon en 10 semaines, je cours déjà 2 fois par semaine.',
+  'J’ai un examen d’anatomie le 15 décembre : fais-moi un planning de révision.',
+  'Je veux apprendre à programmer en Python, 5 h par semaine.'
+];
+
+function aiSystem() {
+  const c = aiCfg(), t0 = today(), wd = d => parseD(d).toLocaleDateString('fr-FR', { weekday: 'long' });
+  let ctx = '';
+  if (c.ctx) {
+    const open = S.tasks.items.filter(t => !t.done).sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 15).map(t => `- ${t.title}${t.due ? ' (' + t.due + ')' : ''}`).join('\n') || '(aucune)';
+    const hab = S.habits.items.slice(0, 10).map(h => h.name).join(', ') || '(aucune)';
+    ctx = `\n\nContexte de l’utilisateur, pour éviter les doublons et les conflits de dates :\nTâches en cours :\n${open}\nHabitudes : ${hab}`;
+  }
+  return [
+    'Tu es l’assistant de planification de « Mon dashboard », une application personnelle. Tu réponds en français, de façon directe et chaleureuse, sans fioritures.',
+    `Aujourd’hui : ${wd(t0)} ${t0} (format AAAA-MM-JJ).`,
+    'Ta mission : transformer ce que l’utilisateur veut apprendre ou accomplir en un planning réaliste.',
+    'Règles :',
+    '1. Si une information essentielle manque (niveau actuel, temps disponible par semaine, date limite), pose au maximum 3 questions courtes et numérotées, puis attends la réponse. Si la demande est assez claire, propose directement un plan.',
+    '2. Un plan est réaliste : charge raisonnable, jours de repos, progression par étapes, un point d’étape ou une révision régulière. Pas plus de 40 tâches : regroupe plutôt que de détailler chaque jour.',
+    '3. Quand le plan est prêt, écris 2 à 4 phrases de présentation, puis UN SEUL bloc de code balisé « plan » contenant du JSON valide et rien d’autre :',
+    '```plan',
+    '{"title":"…","goal":{"title":"…","desc":"…","due":"AAAA-MM-JJ","steps":["étape 1","étape 2"]},"tasks":[{"title":"…","due":"AAAA-MM-JJ","prio":"haute|moyenne|basse","note":"…"}],"habits":[{"name":"…","icon":"📖","days":[1,3,5]}],"reminders":[{"title":"…","at":"AAAA-MM-JJTHH:MM","repeat":"none|daily|weekly"}]}',
+    '```',
+    'Détails : « days » = jours de la semaine (0 = dimanche … 6 = samedi), vide ou absent = tous les jours. Toutes les dates sont absolues et à partir d’aujourd’hui. Tous les champs sont optionnels sauf « title ». L’objectif (goal) et ses étapes servent de fil conducteur ; les tâches sont les actions datées ; les habitudes sont les pratiques récurrentes ; les rappels sont des alertes ponctuelles.',
+    '4. Si l’utilisateur demande une modification, renvoie le plan complet mis à jour.',
+    '5. N’écris jamais de JSON en dehors du bloc plan.'
+  ].join('\n') + ctx;
+}
+
+async function aiCall(msgs, system) {
+  const c = aiCfg(), model = c.model || AI_PROVIDERS[c.provider].model;
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 90000);
+  let url, body, headers = { 'Content-Type': 'application/json' };
+  if (c.provider === 'gemini') {
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+    headers['x-goog-api-key'] = c.key;
+    body = { systemInstruction: { parts: [{ text: system }] }, contents: msgs.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] })), generationConfig: { temperature: .7, maxOutputTokens: 8192 } };
+  } else if (c.provider === 'anthropic') {
+    url = 'https://api.anthropic.com/v1/messages';
+    headers['x-api-key'] = c.key; headers['anthropic-version'] = '2023-06-01'; headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    body = { model, max_tokens: 8192, system, messages: msgs.map(m => ({ role: m.role, content: m.text })) };
+  } else {
+    url = 'https://openrouter.ai/api/v1/chat/completions';
+    headers.Authorization = 'Bearer ' + c.key;
+    body = { model, max_tokens: 8192, messages: [{ role: 'system', content: system }, ...msgs.map(m => ({ role: m.role, content: m.text }))] };
+  }
+  try {
+    const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const m = j && j.error && (j.error.message || (typeof j.error === 'string' ? j.error : '')) || '';
+      throw new Error(r.status === 401 || r.status === 403 ? 'Clé refusée par le fournisseur. Vérifiez-la dans la configuration.' + (m ? ' (' + str(m, 160) + ')' : '')
+        : r.status === 429 ? 'Quota atteint chez le fournisseur : réessayez dans un moment.' : (m ? str(m, 240) : 'Erreur ' + r.status + ' du fournisseur.'));
+    }
+    const out = c.provider === 'gemini' ? arr(j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts).map(p => str(p.text, 40000)).join('')
+      : c.provider === 'anthropic' ? arr(j.content).map(p => str(p.text, 40000)).join('')
+        : str(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content, 40000);
+    if (!out.trim()) throw new Error('Réponse vide du modèle. Reformulez ou réessayez.');
+    return out;
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('Le fournisseur met trop de temps à répondre. Réessayez.');
+    if (e instanceof TypeError) throw new Error('Impossible de joindre le fournisseur (connexion ou blocage du navigateur).');
+    throw e;
+  } finally { clearTimeout(to); }
+}
+
+/** Valide et nettoie un plan renvoyé par le modèle (jamais de confiance aveugle). */
+function aiPlan(o) {
+  const t0 = today(), now = nowStr(), d = s => validD(s) ? s : '';
+  const tasks = arr(o.tasks).filter(isObj).map(t => ({ title: str(t.title, 300).trim(), due: d(t.due) >= t0 ? d(t.due) : '', prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne', note: str(t.note, 2000), on: true })).filter(t => t.title).slice(0, 60);
+  const g = isObj(o.goal) && str(o.goal.title).trim() ? { title: str(o.goal.title, 200).trim(), desc: str(o.goal.desc, 3000), due: d(o.goal.due), steps: lines(o.goal.steps, 200).slice(0, 30), on: true } : null;
+  const habits = arr(o.habits).filter(isObj).map(h => ({ name: str(h.name, 80).trim(), icon: str(h.icon, 8) || '🌿', days: [...new Set(arr(h.days).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))], on: true })).filter(h => h.name).slice(0, 8);
+  const okAt = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) && validD(s.slice(0, 10)) && +s.slice(11, 13) < 24 && +s.slice(14) < 60;
+  const reminders = arr(o.reminders).filter(isObj).map(r => ({ title: str(r.title, 200).trim(), at: str(r.at, 16), repeat: ['daily', 'weekly'].includes(r.repeat) ? r.repeat : 'none', on: true }))
+    .filter(r => r.title && okAt(r.at) && (r.repeat !== 'none' || r.at > now)).slice(0, 20);
+  if (!tasks.length && !g && !habits.length && !reminders.length) return null;
+  return { title: str(o.title, 120).trim() || (g && g.title) || 'Planning', goal: g, tasks, habits, reminders, applied: false };
+}
+function aiParse(raw) {
+  const re = /```(?:plan|json)?\s*([\s\S]*?)```/g; let m;
+  while ((m = re.exec(raw))) {
+    try { const o = JSON.parse(m[1]); const plan = isObj(o) && aiPlan(o); if (plan) return { text: raw.replace(m[0], '').trim() || 'Voici le plan.', plan }; } catch (e) { }
+  }
+  const cut = /```(?:plan|json)/.test(raw);
+  return { text: cut ? raw.replace(/```(?:plan|json)[\s\S]*$/, '').trim() + '\n\n(Le plan n’a pas pu être lu. Demandez-le à nouveau.)' : raw.trim(), plan: null };
+}
+
+const aiRich = s => esc(s).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+const WD = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+function planHTML(p, i) {
+  const dis = p.applied ? ' disabled' : '';
+  const row = (g, k, on, label, sub) => `<label class="plan-it"><input type="checkbox" data-c="aiPick" data-id="${i}" data-g="${g}" data-k="${k}"${on ? ' checked' : ''}${dis}><span><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></label>`;
+  const n = p.tasks.filter(x => x.on).length + p.habits.filter(x => x.on).length + p.reminders.filter(x => x.on).length + (p.goal && p.goal.on ? 1 : 0);
+  let h = `<div class="plan"><div class="row"><b class="grow">${esc(p.title)}</b>${p.applied ? '<span class="chip ok">Ajouté au dashboard</span>' : ''}</div>`;
+  if (p.goal) h += `<h3>Objectif</h3>${row('g', 0, p.goal.on, p.goal.title, [p.goal.due && 'échéance ' + fmtShort(p.goal.due), p.goal.steps.length && plural(p.goal.steps.length, 'étape', 'étapes')].filter(Boolean).join(' · '))}`;
+  if (p.tasks.length) h += `<h3>Tâches (${p.tasks.length})</h3><div class="plan-list">${p.tasks.map((t, k) => row('t', k, t.on, t.title, [t.due && fmtShort(t.due), t.prio !== 'moyenne' && 'priorité ' + t.prio, t.note].filter(Boolean).join(' · '))).join('')}</div>`;
+  if (p.habits.length) h += `<h3>Habitudes</h3>${p.habits.map((x, k) => row('h', k, x.on, x.icon + ' ' + x.name, x.days.length ? x.days.map(d => WD[d]).join(' ') : 'tous les jours')).join('')}`;
+  if (p.reminders.length) h += `<h3>Rappels</h3>${p.reminders.map((x, k) => row('r', k, x.on, x.title, fmtAt(x.at) + (x.repeat === 'daily' ? ' · chaque jour' : x.repeat === 'weekly' ? ' · chaque semaine' : ''))).join('')}`;
+  if (!p.applied) h += `<div class="row end" style="margin-top:12px"><button class="btn primary" data-a="aiApply" data-id="${i}"${n ? '' : ' disabled'}>Ajouter au dashboard (${n})</button></div>`;
+  return h + '</div>';
+}
+function aiMsgsHTML() {
+  let h = '';
+  if (!AI.msgs.length) h += `<div class="ai-m assistant"><p>Dites-moi ce que vous voulez apprendre ou accomplir, et le temps dont vous disposez. Je vous propose un planning que vous pourrez ajouter d’un clic à vos tâches, objectifs, habitudes et rappels.</p></div>
+    <div class="ai-sugg">${AI_SUGGEST.map((s, k) => `<button class="btn sm" data-a="aiSuggest" data-k="${k}">${esc(s)}</button>`).join('')}</div>`;
+  AI.msgs.forEach((m, i) => { h += `<div class="ai-m ${m.role}${m.plan ? ' wide' : ''}">${aiRich(m.text)}${m.plan ? planHTML(m.plan, i) : ''}</div>`; });
+  if (AI.busy) h += '<div class="ai-m assistant" role="status" aria-label="L’assistant réfléchit"><span class="dots"><i></i><i></i><i></i></span></div>';
+  if (AI.err) h += `<p class="err" role="alert">${esc(AI.err)}</p>`;
+  return h;
+}
+function aiPaint(clear) {
+  if (cur !== 'assistant') return;
+  const box = $('#aichat'); if (!box) return render();
+  box.innerHTML = aiMsgsHTML();
+  const inp = $('#aiin'); if (inp && clear) inp.value = '';
+  const b = $('#aisend'); if (b) b.disabled = AI.busy;
+  const last = box.querySelector('.ai-m:last-of-type, .err:last-child');
+  const el = [...box.querySelectorAll('.ai-m')].pop();
+  if (el && AI.msgs.length) el.scrollIntoView({ block: AI.busy ? 'nearest' : 'start' });
+}
+VIEWS.assistant = () => {
+  const c = aiCfg();
+  if (!c.key) return `<section class="hud">${empty('Branchez votre assistant', 'Collez une clé API (gratuite avec Google Gemini) et l’assistant vous crée des plannings. Tout se fait en ligne : aucun modèle ne tourne sur votre ordinateur.', '<button class="btn primary" data-a="aiConf">Configurer</button>')}</section>`;
+  return `<div class="ai-bar"><span class="pill">${esc(AI_PROVIDERS[c.provider].label)}</span><span class="grow"></span>
+    <button class="btn sm" data-a="aiReset"${AI.msgs.length ? '' : ' disabled'}>Nouvelle conversation</button><button class="btn sm ghost" data-a="aiConf">Configuration</button></div>
+  <section class="hud" id="aichat" aria-live="polite">${aiMsgsHTML()}</section>
+  <form class="hud ai-in" data-s="aiSend"><textarea id="aiin" rows="1" maxlength="4000" data-i="aiDraft" placeholder="Ce que vous voulez apprendre ou accomplir…" aria-label="Votre message à l’assistant">${esc(AI.draft)}</textarea><button id="aisend" class="btn primary"${AI.busy ? ' disabled' : ''}>Envoyer</button></form>`;
+};
+async function aiSend(text) {
+  text = text.trim(); if (!text || AI.busy) return;
+  if (!navigator.onLine) { AI.err = 'Pas de connexion : l’assistant a besoin d’Internet.'; aiPaint(); return; }
+  AI.msgs.push({ role: 'user', text: text.slice(0, 4000), raw: '', plan: null }); AI.draft = ''; AI.err = ''; AI.busy = true; aiSave(); aiPaint(true);
+  try {
+    const raw = await aiCall(AI.msgs.map(m => ({ role: m.role, text: m.raw || m.text })), aiSystem());
+    const r = aiParse(raw);
+    AI.msgs.push({ role: 'assistant', text: r.text, raw, plan: r.plan });
+  } catch (e) { AI.msgs.pop(); AI.draft = text; AI.err = e.message || 'Erreur inattendue.'; const i = $('#aiin'); if (i) i.value = text; }
+  AI.busy = false; aiSave(); aiPaint();
+}
+SUB.aiSend = form => aiSend($('#aiin', form).value);
+INP.aiDraft = (d, t) => { AI.draft = t.value; };
+document.addEventListener('keydown', e => {
+  if (e.target && e.target.id === 'aiin' && e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (e.target.form) e.target.form.requestSubmit(); }
+});
+ACT.aiSuggest = d => { const i = $('#aiin'); if (i) { i.value = AI_SUGGEST[+d.k] || ''; AI.draft = i.value; i.focus(); } };
+ACT.aiReset = () => { if (AI.busy) return; AI.msgs = []; AI.err = ''; aiSave(); render(); };
+CH.aiPick = (d, t) => {
+  const m = AI.msgs[+d.id], p = m && m.plan; if (!p || p.applied) return;
+  const it = d.g === 'g' ? p.goal : ({ t: p.tasks, h: p.habits, r: p.reminders }[d.g] || [])[+d.k];
+  if (it) { it.on = t.checked; aiSave(); aiPaint(); const b = $(`[data-a="aiApply"][data-id="${d.id}"]`); if (b) b.focus({ preventScroll: true }); }
+};
+ACT.aiApply = d => {
+  const m = AI.msgs[+d.id], p = m && m.plan; if (!p || p.applied) return;
+  const mods = ['tasks', 'goals', 'habits', 'reminders'], snap = mods.map(k => [k, JSON.stringify(S[k])]), tag = p.title.slice(0, 40), t0 = today();
+  let n = 0;
+  for (const t of p.tasks.filter(x => x.on)) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, tags: [tag], note: t.note, done: false, doneAt: '', created: t0 }); n++; }
+  if (p.goal && p.goal.on) { S.goals.items.push({ id: uid(), title: p.goal.title, desc: p.goal.desc, due: p.goal.due, cat: 'Apprentissage', status: 'active', steps: p.goal.steps.map(s => ({ id: uid(), text: s, done: false })) }); n++; }
+  p.habits.filter(x => x.on).forEach((h, i) => { S.habits.items.push({ id: uid(), name: h.name, icon: h.icon, color: HABIT_COLORS[(S.habits.items.length + i) % HABIT_COLORS.length][0], freq: h.days.length ? 'days' : 'daily', days: h.days, target: 0, unit: '', step: 1, created: t0, log: {} }); n++; });
+  for (const r of p.reminders.filter(x => x.on)) { S.reminders.items.push({ id: uid(), title: r.title, at: r.at, repeat: r.repeat, fired: false, pending: '' }); n++; }
+  if (!n) return;
+  for (const k of mods) commit(k, { silent: true });
+  p.applied = true; aiSave(); render(); safe(tick);
+  toast(plural(n, 'élément ajouté', 'éléments ajoutés') + '.', { undo: () => { for (const [k, s] of snap) { S[k] = JSON.parse(s); commit(k, { silent: true }); } p.applied = false; aiSave(); render(); } });
+};
+ACT.aiConf = () => {
+  const c = aiCfg();
+  dlgOpen(`<form data-s="aiConfSave"><h2 class="dlg-t">Assistant IA</h2>
+    <p class="hint">L’assistant tourne en ligne : rien n’est calculé sur votre ordinateur et votre carte graphique n’est pas utilisée. La clé reste dans ce navigateur : elle n’est ni synchronisée avec votre compte ni incluse dans vos exports.</p>
+    <label class="f"><span>Fournisseur</span><select name="provider" data-c="aiProv">${Object.entries(AI_PROVIDERS).map(([k, v]) => `<option value="${k}"${k === c.provider ? ' selected' : ''}>${esc(v.label)}</option>`).join('')}</select></label>
+    <label class="f"><span>Clé API</span><input type="password" name="key" autocomplete="off" spellcheck="false" value="${esc(c.key)}" placeholder="Collez votre clé"></label>
+    <p class="small" style="margin:-4px 0 12px"><a id="ailink" href="${AI_PROVIDERS[c.provider].link}" target="_blank" rel="noopener noreferrer">Obtenir une clé chez ce fournisseur</a></p>
+    <label class="f"><span>Modèle (laisser vide pour le modèle par défaut)</span><input type="text" name="model" maxlength="100" value="${esc(c.model)}" placeholder="${esc(AI_PROVIDERS[c.provider].model)}"></label>
+    <div class="checks" style="margin-bottom:12px"><label><input type="checkbox" name="ctx"${c.ctx ? ' checked' : ''}>Partager le titre de mes tâches en cours avec l’IA, pour éviter les conflits</label></div>
+    <p class="err" hidden></p>
+    <div class="row end"><button type="button" class="btn ghost" data-a="dlgClose">Annuler</button>${c.key ? '<button type="button" class="btn danger" data-a="aiKeyDel">Supprimer la clé</button>' : ''}<button class="btn primary">Enregistrer</button></div></form>`);
+};
+CH.aiProv = (d, t) => { const p = AI_PROVIDERS[t.value]; if (!p) return; $('#ailink').href = p.link; t.form.elements.model.placeholder = p.model; };
+SUB.aiConfSave = form => {
+  const f = form.elements, key = f.key.value.trim(), err = $('.err', form);
+  if (!key) { err.textContent = 'Collez une clé API.'; err.hidden = false; return; }
+  ls.set('ai', { provider: AI_PROVIDERS[f.provider.value] ? f.provider.value : 'gemini', key: key.slice(0, 400), model: f.model.value.trim().slice(0, 100), ctx: f.ctx.checked });
+  $('#dlg').close('ok'); toast('Assistant configuré.'); render();
+};
+ACT.aiKeyDel = () => { ls.del('ai'); $('#dlg').close('ok'); toast('Clé supprimée de ce navigateur.'); render(); };
+
 VIEWS.reglages = () => {
   const n = { t: S.tasks.items.length, h: S.habits.items.length, g: S.goals.items.length, f: S.finance.tx.length, j: Object.keys(S.journal.entries).length, r: S.reminders.items.length };
   return `<div class="grid g2" style="align-items:start">

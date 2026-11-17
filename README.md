@@ -125,3 +125,13 @@ Les données sont rangées par module (`home`, `tasks`, `habits`, `goals`, `fina
 | `TESTS.md` | Checklist de tests manuels |
 | `README.md` | Ce document |
 | `.gitignore` | Fichiers à ne jamais publier |
+
+
+## Assistant IA (planning)
+
+La section **Assistant IA** (touche `8`) génère un planning à partir d'une demande en langage naturel (« je veux apprendre l'espagnol en 3 mois, 30 min par jour »). Le plan proposé (objectif et étapes, tâches datées, habitudes, rappels) s'affiche avec des cases à cocher et n'est ajouté au dashboard qu'après validation ; l'ajout est annulable.
+
+- Tout se passe **en ligne** : aucun modèle local, la carte graphique n'est pas utilisée.
+- Fournisseurs : Google Gemini (offre gratuite), Anthropic Claude, OpenRouter. Le modèle est modifiable.
+- La clé API est enregistrée uniquement dans le navigateur (`md:ai`) : elle n'est ni synchronisée avec Firestore ni incluse dans l'export JSON.
+- Par défaut, les titres des tâches en cours sont envoyés avec la demande pour éviter les conflits ; désactivable dans la configuration.
