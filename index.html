@@ -6,6 +6,12 @@
 <title>Mon dashboard</title>
 <meta name="description" content="Dashboard personnel : tâches, habitudes, objectifs, finances et journal">
 <meta name="theme-color" content="#090A0E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dashboard">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2338394A'/%3E%3Cstop offset='1' stop-color='%2314151D'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='114' fill='url(%23g)'/%3E%3Cg fill='none' stroke='%23A5A5FF' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='256' cy='256' r='150' stroke-opacity='.28' stroke-width='52'/%3E%3Cpath d='M256 106A150 150 0 1 1 115 205' stroke-width='52'/%3E%3Cpath d='M196 262l44 44 82-92' stroke-width='48'/%3E%3C/g%3E%3C/svg%3E">
 <script>
 /* Applique le thème et les réglages d'affichage avant le premier rendu. */
@@ -504,7 +510,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.4.1', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.5.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -1238,7 +1244,7 @@ VIEWS.taches = () => {
       ${sel('tf', 'period', TF.period, [['', 'Toutes'], ['today', 'Aujourd’hui'], ['week', 'Cette semaine'], ['late', 'En retard']], 'Période')}
       ${sel('tf', 'sort', TF.sort, [['due', 'Échéance'], ['prio', 'Priorité']], 'Trier par')}
     </div>
-    <p class="muted small" aria-live="polite">${plural(list.length, 'tâche', 'tâches')}</p>
+    <div class="row" style="margin-bottom:4px"><p class="muted small grow" aria-live="polite">${plural(list.length, 'tâche', 'tâches')}</p>${all.length ? '<button class="btn sm ghost danger" data-a="taskDelAll">Tout supprimer</button>' : ''}</div>
     ${list.length ? `${TF.group === 'project' ? taskGroups(list.slice(0, TF.limit), all, t0) : `<ul class="list">${list.slice(0, TF.limit).map(t => taskRow(t, t0)).join('')}</ul>`}${list.length > TF.limit ? `<div class="row" style="justify-content:center;margin-top:12px"><button class="btn" data-a="taskMore">Afficher les ${Math.min(150, list.length - TF.limit)} suivantes</button></div>` : ''}`
       : filtered && all.length ? empty('Aucune tâche ne correspond', 'Modifiez les filtres pour en voir davantage.') : empty('Tout est fait', 'Aucune tâche en attente. Écrivez la prochaine juste au-dessus.')}
   </section>`;
@@ -1269,6 +1275,11 @@ function taskForm(t) {
 ACT.taskNew = () => taskForm();
 ACT.taskEdit = d => { const t = S.tasks.items.find(x => x.id === d.id); if (t) taskForm(t); };
 ACT.taskToggle = d => { const t = S.tasks.items.find(x => x.id === d.id); if (!t) return; t.done = !t.done; t.doneAt = t.done ? today() : ''; commit('tasks'); };
+ACT.taskDelAll = () => {
+  const n = S.tasks.items.length; if (!n) return;
+  confirmDlg({ title: 'Supprimer toutes les tâches ?', msg: `Les ${plural(n, 'tâche', 'tâches')} (terminées ou non, tous projets confondus) seront supprimées. Vous pourrez annuler juste après.`, ok: 'Tout supprimer', danger: true,
+    onOk() { withUndo('tasks', plural(n, 'tâche supprimée', 'tâches supprimées') + '.', () => { S.tasks.items = []; }); } });
+};
 ACT.taskDel = d => withUndo('tasks', 'Tâche supprimée.', () => { S.tasks.items = S.tasks.items.filter(x => x.id !== d.id); });
 
 /* =====================================================================
@@ -2136,6 +2147,7 @@ VIEWS.reglages = () => {
   <section class="hud"><h2>Finances</h2>${sel('cur', 'c', S.finance.currency, ['CHF', 'EUR', 'USD', 'CAD', 'GBP'].map(c => [c, c]), 'Devise affichée')}</section>
   <section class="hud"><h2>Phrases de motivation</h2><form data-s="saveLines" data-k="quotes"><label class="f"><span>Une phrase par ligne. L’Accueil en affiche une chaque jour.</span><textarea rows="7">${esc(S.home.quotes.join('\n'))}</textarea></label><button class="btn">Enregistrer les phrases</button></form></section>
   <section class="hud"><h2>Questions du journal</h2><form data-s="saveLines" data-k="questions"><label class="f"><span>Une question par ligne. Le Journal en propose une chaque jour.</span><textarea rows="7">${esc(S.journal.questions.join('\n'))}</textarea></label><button class="btn">Enregistrer les questions</button></form></section>
+  ${installCard()}
   <section class="hud"><h2>Aide</h2><p class="small" style="margin-bottom:10px">Le dashboard se pilote aussi au clavier.</p><button class="btn" data-a="help">Voir les raccourcis clavier</button></section>
   <section class="hud"><h2>Tout effacer</h2><p class="small" style="margin-bottom:10px">Supprime toutes les données ${session ? 'de votre compte' : 'de ce navigateur'}. Faites un export avant.</p><button class="btn danger" data-a="wipe">Effacer toutes mes données</button></section></div>`;
 };
@@ -2176,6 +2188,28 @@ ACT.wipe = () => confirmDlg({
   msg: `Tâches, habitudes, objectifs, finances, journal et rappels seront supprimés ${session ? 'de votre compte, sur tous vos appareils' : 'de ce navigateur'}. Cette action ne peut pas être annulée.`,
   onOk() { for (const m of MODULES) { S[m] = DEFAULTS[m](); commit(m, { silent: true }); } render(); toast('Toutes les données ont été effacées.'); }
 });
+
+/* ---------- Installation (application sur l'écran d'accueil) ---------- */
+let deferredInstall = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (cur === 'reglages') render(); });
+window.addEventListener('appinstalled', () => { deferredInstall = null; toast('Application installée.'); if (cur === 'reglages') render(); });
+ACT.install = async () => {
+  if (!deferredInstall) return;
+  const ev = deferredInstall; deferredInstall = null;
+  try { ev.prompt(); await ev.userChoice; } catch (e) { }
+  render();
+};
+function installCard() {
+  let body;
+  if (isStandalone()) body = '<p class="small"><span class="chip ok">Installée</span> Vous utilisez déjà l’application sur cet appareil.</p>';
+  else if (deferredInstall) body = '<p class="small" style="margin-bottom:10px">Ajoutez le dashboard à votre écran d’accueil ou à vos applications : il s’ouvre comme une appli, sans barre d’adresse, et fonctionne aussi hors ligne.</p><button class="btn primary" data-a="install">Installer l’application</button>';
+  else if (isIOS()) body = '<p class="small">Sur iPhone et iPad, ouvrez ce site dans <b>Safari</b>, touchez le bouton <b>Partager</b> (le carré avec une flèche), puis <b>Sur l’écran d’accueil</b>.</p>';
+  else body = '<p class="small"><b>Android (Chrome)</b> : menu ⋮ puis <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.<br><b>Ordinateur (Chrome, Edge)</b> : icône d’installation à droite de la barre d’adresse, ou menu ⋮ puis <b>Installer Mon dashboard</b>.<br><b>Mac (Safari)</b> : Fichier puis <b>Ajouter au Dock</b>.</p><p class="muted small" style="margin-top:8px">Firefox sur ordinateur ne sait pas installer d’applications web.</p>';
+  return `<section class="hud"><h2>Installer sur cet appareil</h2>${body}</section>`;
+}
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker indisponible', e)); });
 
 /* ---------- Connexion ---------- */
 ACT.login = async () => {

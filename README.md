@@ -141,3 +141,11 @@ La section **Assistant IA** (touche `8`) génère un planning à partir d'une de
 - **Projets** : chaque tâche peut appartenir à un projet (champ « Projet » du formulaire). Dans Tâches, le filtre « Projet » et l'affichage « Par projet » regroupent les tâches avec l'avancement de chaque projet. Les plans de l'assistant créent automatiquement un projet portant le nom du plan.
 - **Historique** : les conversations avec l'assistant sont conservées (30 au plus) et se rouvrent depuis le bouton « Historique ». Elles restent sur l'appareil : ni synchronisées ni exportées.
 - **Modèle utilisé** : sous chaque réponse, une ligne indique quel modèle gratuit a répondu.
+
+## Installer comme une application
+
+Le dashboard est une application web installable (téléphone, tablette, ordinateur) et fonctionne hors ligne grâce à un service worker (`sw.js`) et à un manifeste (`manifest.webmanifest`).
+
+- **Où installer** : Réglages > « Installer sur cet appareil » (bouton direct sur Chrome et Edge, instructions sur iPhone/iPad avec Safari : Partager > Sur l'écran d'accueil).
+- **Mises à jour** : la page principale est chargée depuis le réseau dès qu'on est en ligne ; la copie locale ne sert qu'hors ligne. À chaque mise en ligne, augmenter `APP_VERSION` dans `index.html` et `VERSION` dans `sw.js`.
+- **Hors ligne** : seules les ressources du site sont gardées en copie ; Firebase, l'assistant IA et GitHub passent toujours par le réseau.
