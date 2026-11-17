@@ -1794,19 +1794,18 @@ function tick() {
 const sw = (k, on, label, help) => `<button class="sw" role="switch" aria-checked="${on}" data-a="pref" data-k="${k}"><span>${label}<br><span class="muted small">${help}</span></span><i aria-hidden="true"></i></button>`;
 /* =====================================================================
    ASSISTANT IA — crée un planning à partir d'une demande en langage naturel.
-   Tout se passe en ligne (Google Gemini, Anthropic ou OpenRouter) : aucun
+   Tout se passe en ligne (OpenRouter, modèles gratuits « :free ») : aucun
    modèle ne tourne sur l'ordinateur, la carte graphique n'est pas utilisée.
    La clé API reste dans ce navigateur (md:ai) : jamais synchronisée avec le
    compte, jamais incluse dans l'export JSON. Le plan proposé n'est ajouté
    aux tâches, objectifs, habitudes et rappels qu'après validation.
    ===================================================================== */
 const AI_PROVIDERS = {
-  gemini: { label: 'Google Gemini (offre gratuite)', model: 'gemini-2.5-flash', link: 'https://aistudio.google.com/apikey' },
   openrouter: { label: 'OpenRouter (modèles « :free » gratuits)', model: 'meta-llama/llama-3.3-70b-instruct:free', link: 'https://openrouter.ai/keys' }
 };
 const aiCfg = () => {
   const c = ls.get('ai', {}) || {};
-  return { provider: AI_PROVIDERS[c.provider] ? c.provider : 'gemini', key: str(c.key, 400).trim(), model: str(c.model, 100).trim(), ctx: c.ctx !== false };
+  return { provider: AI_PROVIDERS[c.provider] ? c.provider : 'openrouter', key: str(c.key, 400).trim(), model: str(c.model, 100).trim(), ctx: c.ctx !== false };
 };
 const AI = {
   msgs: arr(ls.get('aichat', [])).filter(m => isObj(m) && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
@@ -1850,15 +1849,9 @@ async function aiCall(msgs, system) {
   const c = aiCfg(), model = c.model || AI_PROVIDERS[c.provider].model;
   const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 90000);
   let url, body, headers = { 'Content-Type': 'application/json' };
-  if (c.provider === 'gemini') {
-    url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-    headers['x-goog-api-key'] = c.key;
-    body = { systemInstruction: { parts: [{ text: system }] }, contents: msgs.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] })), generationConfig: { temperature: .7, maxOutputTokens: 8192 } };
-  } else {
-    url = 'https://openrouter.ai/api/v1/chat/completions';
-    headers.Authorization = 'Bearer ' + c.key;
-    body = { model, max_tokens: 8192, messages: [{ role: 'system', content: system }, ...msgs.map(m => ({ role: m.role, content: m.text }))] };
-  }
+  url = 'https://openrouter.ai/api/v1/chat/completions';
+  headers.Authorization = 'Bearer ' + c.key;
+  body = { model, max_tokens: 8192, messages: [{ role: 'system', content: system }, ...msgs.map(m => ({ role: m.role, content: m.text }))] };
   try {
     const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal });
     const j = await r.json().catch(() => ({}));
@@ -1867,8 +1860,7 @@ async function aiCall(msgs, system) {
       throw new Error(r.status === 401 || r.status === 403 ? 'Clé refusée par le fournisseur. Vérifiez-la dans la configuration.' + (m ? ' (' + str(m, 160) + ')' : '')
         : r.status === 429 ? 'Quota atteint chez le fournisseur : réessayez dans un moment.' : (m ? str(m, 240) : 'Erreur ' + r.status + ' du fournisseur.'));
     }
-    const out = c.provider === 'gemini' ? arr(j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts).map(p => str(p.text, 40000)).join('')
-        : str(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content, 40000);
+    const out = str(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content, 40000);
     if (!out.trim()) throw new Error('Réponse vide du modèle. Reformulez ou réessayez.');
     return out;
   } catch (e) {
@@ -1934,7 +1926,7 @@ function aiPaint(clear) {
 }
 VIEWS.assistant = () => {
   const c = aiCfg();
-  if (!c.key) return `<section class="hud">${empty('Branchez votre assistant', 'Collez une clé API (gratuite avec Google Gemini) et l’assistant vous crée des plannings. Tout se fait en ligne : aucun modèle ne tourne sur votre ordinateur.', '<button class="btn primary" data-a="aiConf">Configurer</button>')}</section>`;
+  if (!c.key) return `<section class="hud">${empty('Branchez votre assistant', 'Collez une clé API OpenRouter (gratuite) et l’assistant vous crée des plannings. Tout se fait en ligne : aucun modèle ne tourne sur votre ordinateur.', '<button class="btn primary" data-a="aiConf">Configurer</button>')}</section>`;
   return `<div class="ai-bar"><span class="pill">${esc(AI_PROVIDERS[c.provider].label)}</span><span class="grow"></span>
     <button class="btn sm" data-a="aiReset"${AI.msgs.length ? '' : ' disabled'}>Nouvelle conversation</button><button class="btn sm ghost" data-a="aiConf">Configuration</button></div>
   <section class="hud" id="aichat" aria-live="polite">${aiMsgsHTML()}</section>
@@ -1992,7 +1984,7 @@ CH.aiProv = (d, t) => { const p = AI_PROVIDERS[t.value]; if (!p) return; $('#ail
 SUB.aiConfSave = form => {
   const f = form.elements, key = f.key.value.trim(), err = $('.err', form);
   if (!key) { err.textContent = 'Collez une clé API.'; err.hidden = false; return; }
-  ls.set('ai', { provider: AI_PROVIDERS[f.provider.value] ? f.provider.value : 'gemini', key: key.slice(0, 400), model: f.model.value.trim().slice(0, 100), ctx: f.ctx.checked });
+  ls.set('ai', { provider: AI_PROVIDERS[f.provider.value] ? f.provider.value : 'openrouter', key: key.slice(0, 400), model: f.model.value.trim().slice(0, 100), ctx: f.ctx.checked });
   $('#dlg').close('ok'); toast('Assistant configuré.'); render();
 };
 ACT.aiKeyDel = () => { ls.del('ai'); $('#dlg').close('ok'); toast('Clé supprimée de ce navigateur.'); render(); };
