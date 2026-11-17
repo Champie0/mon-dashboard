@@ -360,7 +360,15 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
 .sw[aria-checked=true] i::after{transform:translateX(18px)}
 kbd{display:inline-block;min-width:1.7em;text-align:center;padding:0 6px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:7px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11.5px;background:var(--g-2)}
 
+/* ---------- Projets ---------- */
+.proj{margin-top:20px}
+.proj:first-child{margin-top:4px}
+.proj-h{margin-bottom:6px;font-size:14px}
+.proj .bar{margin-bottom:2px}
+.proj-chip{background:var(--accent-soft);color:var(--text);border-color:transparent}
+
 /* ---------- Assistant IA ---------- */
+.ai-by{margin-top:8px;font-size:11.5px;color:var(--text-3)}
 .ai-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 #aichat{display:flex;flex-direction:column;gap:14px;min-height:220px}
 .ai-m{max-width:min(720px,92%);padding:11px 16px;border-radius:20px;line-height:1.55;overflow-wrap:anywhere;scroll-margin-top:96px}
@@ -496,7 +504,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.3.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.4.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -597,7 +605,7 @@ const NORMALIZE = {
     return {
       v: 1, items: r.items.filter(t => isObj(t) && str(t.title).trim()).map(t => ({
         id: str(t.id, 40) || uid(), title: str(t.title, 300).trim(), prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne',
-        due: validD(t.due) ? t.due : '', tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), done: !!t.done,
+        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), done: !!t.done,
         doneAt: validD(t.doneAt) ? t.doneAt : '', created: validD(t.created) ? t.created : today()
       }))
     };
@@ -1187,7 +1195,7 @@ ACT.topPick = () => {
 /* =====================================================================
    2. TÂCHES
    ===================================================================== */
-const TF = { status: 'todo', prio: '', tag: '', period: '', sort: 'due', limit: 150 };
+const TF = { status: 'todo', prio: '', tag: '', project: '', group: '', period: '', sort: 'due', limit: 150 };
 const PRIO = { haute: 0, moyenne: 1, basse: 2 };
 const taskSort = k => (a, b) => {
   const da = a.due || '9999', db = b.due || '9999', p = PRIO[a.prio] - PRIO[b.prio], d = da < db ? -1 : da > db ? 1 : 0;
@@ -1199,28 +1207,39 @@ function taskRow(t, t0, compact) {
     <button class="chk" role="checkbox" aria-checked="${t.done}" data-a="taskToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} : ${esc(t.title)}">✓</button>
     <div class="grow"><div class="it-title">${esc(t.title)}</div><div class="meta"><span class="chip ${t.prio}">Priorité ${t.prio}</span>
       ${t.due ? (late ? `<span class="chip late">En retard · ${esc(fmtShort(t.due))}</span>` : `<span>Échéance : ${esc(relDay(t.due))}</span>`) : ''}
-      ${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${t.note && !compact ? `<span>Note : ${esc(t.note.slice(0, 70))}${t.note.length > 70 ? '…' : ''}</span>` : ''}</div></div>
+      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${t.note && !compact ? `<span>Note : ${esc(t.note.slice(0, 70))}${t.note.length > 70 ? '…' : ''}</span>` : ''}</div></div>
     ${compact ? '' : `<button class="ic" data-a="taskEdit" data-id="${A(t.id)}" aria-label="Modifier ${esc(t.title)}" title="Modifier">✎</button><button class="ic" data-a="taskDel" data-id="${A(t.id)}" aria-label="Supprimer ${esc(t.title)}" title="Supprimer">✕</button>`}</li>`;
 }
 const sel = (c, k, v, opts, label) => `<div><label for="s_${c}_${k}">${label}</label><select id="s_${c}_${k}" data-c="${c}" data-k="${k}">${opts.map(([val, lab]) => `<option value="${esc(val)}"${val === v ? ' selected' : ''}>${esc(lab)}</option>`).join('')}</select></div>`;
+/** Tâches regroupées par projet, avec l'avancement de chaque projet. */
+function taskGroups(shown, all, t0) {
+  const names = [...new Set(shown.map(t => t.project || ''))].sort((a, b) => !a ? 1 : !b ? -1 : a.localeCompare(b, 'fr'));
+  return names.map(n => {
+    const mine = shown.filter(t => (t.project || '') === n), tot = n ? all.filter(t => t.project === n) : [], done = tot.filter(t => t.done).length, pct = tot.length ? Math.round(done / tot.length * 100) : 0;
+    return `<div class="proj"><div class="row proj-h"><b class="grow">${esc(n || 'Sans projet')}</b>${n ? `<span class="muted small">${done} / ${tot.length} terminées</span>` : ''}</div>${n ? `<div class="bar" role="img" aria-label="Avancement de ${esc(n)} : ${pct} %"><i style="width:${pct}%"></i></div>` : ''}<ul class="list">${mine.map(t => taskRow(t, t0)).join('')}</ul></div>`;
+  }).join('');
+}
 VIEWS.taches = () => {
   const t0 = today(), ws = weekStart(t0), we = addDays(ws, 6), all = S.tasks.items;
   const tags = [...new Set(all.flatMap(t => t.tags))].sort();
   if (TF.tag && !tags.includes(TF.tag)) TF.tag = '';
-  const list = all.filter(t => (TF.status === 'all' || (TF.status === 'done') === t.done) && (!TF.prio || t.prio === TF.prio) && (!TF.tag || t.tags.includes(TF.tag)) &&
+  const projects = [...new Set(all.map(t => t.project).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+  if (TF.project && TF.project !== '-' && !projects.includes(TF.project)) TF.project = '';
+  const list = all.filter(t => (TF.status === 'all' || (TF.status === 'done') === t.done) && (!TF.prio || t.prio === TF.prio) && (!TF.tag || t.tags.includes(TF.tag)) && (!TF.project || (TF.project === '-' ? !t.project : t.project === TF.project)) &&
     (!TF.period || (TF.period === 'today' ? t.due === t0 : TF.period === 'week' ? t.due >= ws && t.due <= we : !t.done && t.due && t.due < t0))).sort(taskSort(TF.sort));
-  const filtered = TF.status !== 'todo' || TF.prio || TF.tag || TF.period;
+  const filtered = TF.status !== 'todo' || TF.prio || TF.tag || TF.project || TF.period;
   return `<section class="hud">
     <form class="row" data-s="taskQuick" style="margin-bottom:14px"><input class="grow" id="quick" type="text" maxlength="300" placeholder="Nouvelle tâche, puis Entrée" aria-label="Titre de la nouvelle tâche" autocomplete="off"><button class="btn primary">Ajouter</button><button type="button" class="btn" data-a="taskNew" title="Raccourci : T">Ajouter avec détails</button></form>
     <div class="filters">
       ${sel('tf', 'status', TF.status, [['todo', 'À faire'], ['done', 'Terminées'], ['all', 'Toutes']], 'Statut')}
       ${sel('tf', 'prio', TF.prio, [['', 'Toutes'], ['haute', 'Haute'], ['moyenne', 'Moyenne'], ['basse', 'Basse']], 'Priorité')}
+      ${projects.length || TF.group ? sel('tf', 'project', TF.project, [['', 'Tous'], ['-', 'Sans projet'], ...projects.map(g => [g, g])], 'Projet') + sel('tf', 'group', TF.group, [['', 'Liste simple'], ['project', 'Par projet']], 'Affichage') : ''}
       ${sel('tf', 'tag', TF.tag, [['', 'Toutes'], ...tags.map(g => [g, '#' + g])], 'Étiquette')}
       ${sel('tf', 'period', TF.period, [['', 'Toutes'], ['today', 'Aujourd’hui'], ['week', 'Cette semaine'], ['late', 'En retard']], 'Période')}
       ${sel('tf', 'sort', TF.sort, [['due', 'Échéance'], ['prio', 'Priorité']], 'Trier par')}
     </div>
     <p class="muted small" aria-live="polite">${plural(list.length, 'tâche', 'tâches')}</p>
-    ${list.length ? `<ul class="list">${list.slice(0, TF.limit).map(t => taskRow(t, t0)).join('')}</ul>${list.length > TF.limit ? `<div class="row" style="justify-content:center;margin-top:12px"><button class="btn" data-a="taskMore">Afficher les ${Math.min(150, list.length - TF.limit)} suivantes</button></div>` : ''}`
+    ${list.length ? `${TF.group === 'project' ? taskGroups(list.slice(0, TF.limit), all, t0) : `<ul class="list">${list.slice(0, TF.limit).map(t => taskRow(t, t0)).join('')}</ul>`}${list.length > TF.limit ? `<div class="row" style="justify-content:center;margin-top:12px"><button class="btn" data-a="taskMore">Afficher les ${Math.min(150, list.length - TF.limit)} suivantes</button></div>` : ''}`
       : filtered && all.length ? empty('Aucune tâche ne correspond', 'Modifiez les filtres pour en voir davantage.') : empty('Tout est fait', 'Aucune tâche en attente. Écrivez la prochaine juste au-dessus.')}
   </section>`;
 };
@@ -1229,7 +1248,7 @@ ACT.taskMore = () => { TF.limit += 150; render(); };
 SUB.taskQuick = form => {
   const title = $('#quick', form).value.trim();
   if (!title) return;
-  S.tasks.items.push({ id: uid(), title: title.slice(0, 300), prio: 'moyenne', due: '', tags: [], note: '', done: false, doneAt: '', created: today() });
+  S.tasks.items.push({ id: uid(), title: title.slice(0, 300), prio: 'moyenne', due: '', project: TF.project && TF.project !== '-' ? TF.project : '', tags: [], note: '', done: false, doneAt: '', created: today() });
   commit('tasks'); const q = $('#quick'); if (q) q.focus();
 };
 function taskForm(t) {
@@ -1237,10 +1256,11 @@ function taskForm(t) {
     title: t ? 'Modifier la tâche' : 'Nouvelle tâche',
     fields: [{ n: 'title', l: 'Titre', req: true, v: t && t.title, max: 300 },
     [{ n: 'prio', l: 'Priorité', t: 'select', v: t ? t.prio : 'moyenne', opts: [['haute', 'Haute'], ['moyenne', 'Moyenne'], ['basse', 'Basse']] }, { n: 'due', l: 'Échéance (optionnelle)', t: 'date', v: t && t.due }],
+    { n: 'project', l: 'Projet (optionnel)', v: t ? t.project : (TF.project && TF.project !== '-' ? TF.project : ''), ph: 'Espagnol, Mémoire…', max: 60 },
     { n: 'tags', l: 'Étiquettes, séparées par des virgules', v: t ? t.tags.join(', ') : '', ph: 'maison, travail' },
     { n: 'note', l: 'Note', t: 'textarea', v: t && t.note }],
     onOk(v) {
-      const data = { title: v.title, prio: v.prio, due: v.due, tags: [...new Set(v.tags.split(',').map(x => x.trim().replace(/^#/, '').slice(0, 40)).filter(Boolean))].slice(0, 10), note: v.note };
+      const data = { title: v.title, prio: v.prio, due: v.due, project: v.project.trim().slice(0, 60), tags: [...new Set(v.tags.split(',').map(x => x.trim().replace(/^#/, '').slice(0, 40)).filter(Boolean))].slice(0, 10), note: v.note };
       if (t) Object.assign(t, data); else S.tasks.items.push({ id: uid(), done: false, doneAt: '', created: today(), ...data });
       commit('tasks'); toast(t ? 'Tâche modifiée.' : 'Tâche ajoutée.');
     }
@@ -1825,12 +1845,32 @@ const aiCfg = () => {
   const c = ls.get('ai', {}) || {};
   return { provider: AI_PROVIDERS[c.provider] ? c.provider : 'openrouter', key: str(c.key, 400).trim(), model: str(c.model, 100).trim(), ctx: c.ctx !== false };
 };
+const aiCleanMsg = m => ({ role: m.role, text: str(m.text, 12000), raw: str(m.raw, 20000), plan: isObj(m.plan) ? m.plan : null, model: str(m.model, 100) });
+const aiValidMsg = m => isObj(m) && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string';
+function aiLoadConvs() {
+  let convs = arr(ls.get('aiconvs', [])).filter(isObj).map(c => ({ id: str(c.id, 40) || uid(), title: str(c.title, 80), updated: num(c.updated), msgs: arr(c.msgs).filter(aiValidMsg).map(aiCleanMsg).slice(-40) })).filter(c => c.msgs.length);
+  if (!convs.length) {   // ancienne version : une seule conversation
+    const old = arr(ls.get('aichat', [])).filter(aiValidMsg).map(aiCleanMsg).slice(-40);
+    if (old.length) convs = [{ id: uid(), title: '', updated: Date.now(), msgs: old }];
+  }
+  return convs;
+}
 const AI = {
-  msgs: arr(ls.get('aichat', [])).filter(m => isObj(m) && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
-    .map(m => ({ role: m.role, text: str(m.text, 12000), raw: str(m.raw, 20000), plan: isObj(m.plan) ? m.plan : null })).slice(-40),
-  busy: false, stopped: false, ctls: null, draft: '', err: ''
+  convs: aiLoadConvs(), cur: str(ls.get('aicur', ''), 40), busy: false, stopped: false, ctls: null, draft: '', err: '',
+  /** Conversation affichée (créée à la demande). */
+  get conv() {
+    let c = this.convs.find(x => x.id === this.cur) || this.convs[0];
+    if (!c) { c = { id: uid(), title: '', updated: Date.now(), msgs: [] }; this.convs.unshift(c); }
+    this.cur = c.id; return c;
+  },
+  get msgs() { return this.conv.msgs; }
 };
-const aiSave = () => ls.set('aichat', AI.msgs);
+const aiTitle = c => { const pl = c.msgs.map(m => m.plan).filter(Boolean).pop(); const u = c.msgs.find(m => m.role === 'user'); return pl ? pl.title : u ? u.text.replace(/\s+/g, ' ').slice(0, 60) : 'Nouvelle conversation'; };
+function aiSave() {
+  const c = AI.conv; c.updated = Date.now(); c.title = aiTitle(c);
+  AI.convs = AI.convs.filter(x => x.msgs.length || x.id === AI.cur).sort((a, b) => b.updated - a.updated).slice(0, 30);
+  ls.set('aiconvs', AI.convs.filter(x => x.msgs.length)); ls.set('aicur', AI.cur);
+}
 const AI_SUGGEST = [
   'Je veux apprendre l’espagnol en 3 mois, 30 minutes par jour.',
   'Prépare-moi un semi-marathon en 10 semaines, je cours déjà 2 fois par semaine.',
@@ -1888,7 +1928,7 @@ async function aiOne(model, c, msgs, system, signal) {
     : r.status === 429 ? 'Quota gratuit atteint pour ce modèle.' : (m ? str(m, 240) : 'Erreur ' + r.status + ' du fournisseur.')); e.status = r.status; throw e; }
   const out = str(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content, 40000);
   if (!out.trim()) { const e = new Error('Réponse vide du modèle.'); e.status = 502; throw e; }
-  return out;
+  return { out, model: str(j.model, 100) || model };
 }
 async function aiCall(msgs, system) {
   const c = aiCfg();
@@ -1900,7 +1940,7 @@ async function aiCall(msgs, system) {
     const ctls = list.map(() => new AbortController()), tm = setTimeout(() => ctls.forEach(k => k.abort()), 75000);
     AI.ctls = ctls;
     try {
-      return await Promise.any(list.map((m, i) => aiOne(m, c, msgs, system, ctls[i].signal).then(o => { ctls.forEach((k, j) => j !== i && k.abort()); return o; })));
+      return await Promise.any(list.map((m, i) => aiOne(m, c, msgs, system, ctls[i].signal).then(o => { ctls.forEach((k, j) => j !== i && k.abort()); return o; })));  // { out, model }
     } catch (e) {
       const errs = arr(e && e.errors); if (!errs.length) throw e;
       const bad = errs.find(x => x && (x.status === 401 || x.status === 403)); if (bad) throw bad;
@@ -1952,7 +1992,7 @@ function aiMsgsHTML() {
   let h = '';
   if (!AI.msgs.length) h += `<div class="ai-m assistant"><p>Dites-moi ce que vous voulez apprendre ou accomplir, et le temps dont vous disposez. Je vous propose un planning que vous pourrez ajouter d’un clic à vos tâches, objectifs, habitudes et rappels.</p></div>
     <div class="ai-sugg">${AI_SUGGEST.map((s, k) => `<button class="btn sm" data-a="aiSuggest" data-k="${k}">${esc(s)}</button>`).join('')}</div>`;
-  AI.msgs.forEach((m, i) => { h += `<div class="ai-m ${m.role}${m.plan ? ' wide' : ''}">${aiRich(m.text)}${m.plan ? planHTML(m.plan, i) : ''}</div>`; });
+  AI.msgs.forEach((m, i) => { h += `<div class="ai-m ${m.role}${m.plan ? ' wide' : ''}">${aiRich(m.text)}${m.plan ? planHTML(m.plan, i) : ''}${m.role === 'assistant' && m.model ? `<div class="ai-by">Réponse de ${esc(m.model)}</div>` : ''}</div>`; });
   if (AI.busy) h += '<div class="ai-m assistant" role="status" aria-label="L’assistant réfléchit"><span class="dots"><i></i><i></i><i></i></span> <button class="btn sm ghost" data-a="aiStop">Arrêter</button></div>';
   if (AI.err) h += `<p class="err" role="alert">${esc(AI.err)}</p>`;
   return h;
@@ -1971,19 +2011,20 @@ VIEWS.assistant = () => {
   const c = aiCfg();
   if (!c.key) return `<section class="hud">${empty('Branchez votre assistant', 'Collez une clé API OpenRouter (gratuite) et l’assistant vous crée des plannings. Tout se fait en ligne : aucun modèle ne tourne sur votre ordinateur.', '<button class="btn primary" data-a="aiConf">Configurer</button>')}</section>`;
   return `<div class="ai-bar"><span class="pill">${esc(AI_PROVIDERS[c.provider].label)}</span><span class="grow"></span>
-    <button class="btn sm" data-a="aiReset"${AI.msgs.length ? '' : ' disabled'}>Nouvelle conversation</button><button class="btn sm ghost" data-a="aiConf">Configuration</button></div>
+    <button class="btn sm" data-a="aiHist">Historique${AI.convs.filter(c => c.msgs.length).length ? ' (' + AI.convs.filter(c => c.msgs.length).length + ')' : ''}</button><button class="btn sm" data-a="aiReset"${AI.msgs.length ? '' : ' disabled'}>Nouvelle conversation</button><button class="btn sm ghost" data-a="aiConf">Configuration</button></div>
   <section class="hud" id="aichat" aria-live="polite">${aiMsgsHTML()}</section>
   <form class="hud ai-in" data-s="aiSend"><textarea id="aiin" rows="1" maxlength="4000" data-i="aiDraft" placeholder="Ce que vous voulez apprendre ou accomplir…" aria-label="Votre message à l’assistant">${esc(AI.draft)}</textarea><button id="aisend" class="btn primary"${AI.busy ? ' hidden' : ''}>Envoyer</button><button id="aistop" type="button" class="btn" data-a="aiStop"${AI.busy ? '' : ' hidden'}>Arrêter</button></form>`;
 };
 async function aiSend(text) {
   text = text.trim(); if (!text || AI.busy) return;
   if (!navigator.onLine) { AI.err = 'Pas de connexion : l’assistant a besoin d’Internet.'; aiPaint(); return; }
-  AI.msgs.push({ role: 'user', text: text.slice(0, 4000), raw: '', plan: null }); AI.draft = ''; AI.err = ''; AI.busy = true; AI.stopped = false; aiSave(); aiPaint(true);
+  const msgs = AI.msgs;
+  msgs.push({ role: 'user', text: text.slice(0, 4000), raw: '', plan: null, model: '' }); AI.draft = ''; AI.err = ''; AI.busy = true; AI.stopped = false; aiSave(); aiPaint(true);
   try {
-    const raw = await aiCall(AI.msgs.map(m => ({ role: m.role, text: m.raw || m.text })), aiSystem());
+    const res = await aiCall(msgs.map(m => ({ role: m.role, text: m.raw || m.text })), aiSystem()), raw = res.out;
     const r = aiParse(raw);
-    AI.msgs.push({ role: 'assistant', text: r.text, raw, plan: r.plan });
-  } catch (e) { AI.msgs.pop(); AI.draft = text; AI.err = AI.stopped ? '' : (e.message || 'Erreur inattendue.'); const i = $('#aiin'); if (i) i.value = text; if (AI.stopped) toast('Demande arrêtée. Votre message est remis dans le champ.'); }
+    msgs.push({ role: 'assistant', text: r.text, raw, plan: r.plan, model: res.model });
+  } catch (e) { msgs.pop(); AI.draft = text; AI.err = AI.stopped ? '' : (e.message || 'Erreur inattendue.'); const i = $('#aiin'); if (i) i.value = text; if (AI.stopped) toast('Demande arrêtée. Votre message est remis dans le champ.'); }
   AI.busy = false; aiSave(); aiPaint();
 }
 SUB.aiSend = form => aiSend($('#aiin', form).value);
@@ -1993,7 +2034,34 @@ document.addEventListener('keydown', e => {
 });
 ACT.aiStop = () => { if (!AI.busy) return; AI.stopped = true; (AI.ctls || []).forEach(k => k.abort()); };
 ACT.aiSuggest = d => { const i = $('#aiin'); if (i) { i.value = AI_SUGGEST[+d.k] || ''; AI.draft = i.value; i.focus(); } };
-ACT.aiReset = () => { if (AI.busy) return; AI.msgs = []; AI.err = ''; aiSave(); render(); };
+const aiBusyNote = () => { toast('Une réponse est en cours : attendez la fin ou cliquez sur Arrêter.'); };
+ACT.aiReset = () => {
+  if (AI.busy) return aiBusyNote();
+  if (!AI.msgs.length) return;
+  const c = { id: uid(), title: '', updated: Date.now(), msgs: [] }; AI.convs.unshift(c); AI.cur = c.id; AI.err = ''; AI.draft = ''; aiSave(); render();
+};
+function aiHistHTML() {
+  const list = AI.convs.filter(c => c.msgs.length).sort((a, b) => b.updated - a.updated);
+  const when = t => new Date(t).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return `<h2 class="dlg-t">Historique des conversations</h2>` + (list.length ? `<ul class="list">${list.map(c => {
+    const model = [...c.msgs].reverse().find(m => m.model);
+    return `<li><button class="btn ghost grow" style="justify-content:flex-start;height:auto;min-height:34px;padding:6px 10px;white-space:normal;text-align:left;border-radius:12px" data-a="aiOpen" data-id="${A(c.id)}"><span><b>${esc(c.title || aiTitle(c))}</b>${c.id === AI.cur ? ' <span class="chip ok">ouverte</span>' : ''}<small class="muted" style="display:block;font-weight:400">${esc(when(c.updated))} · ${plural(c.msgs.length, 'message', 'messages')}${model ? ' · ' + esc(model.model) : ''}</small></span></button>
+      <button class="ic" data-a="aiDel" data-id="${A(c.id)}" aria-label="Supprimer cette conversation" title="Supprimer">✕</button></li>`;
+  }).join('')}</ul>` : '<p class="muted">Aucune conversation enregistrée pour l’instant.</p>')
+    + '<p class="small muted" style="margin-top:10px">Les conversations restent sur cet appareil : elles ne sont ni synchronisées ni incluses dans l’export.</p><div class="row end" style="margin-top:12px"><button class="btn primary" data-a="dlgClose">Fermer</button></div>';
+}
+ACT.aiHist = () => dlgOpen(aiHistHTML());
+ACT.aiOpen = d => {
+  if (AI.busy) return aiBusyNote();
+  if (!AI.convs.some(c => c.id === d.id)) return;
+  AI.cur = d.id; AI.err = ''; AI.draft = ''; ls.set('aicur', AI.cur); $('#dlg').close('no'); render();
+};
+ACT.aiDel = d => {
+  if (AI.busy) return aiBusyNote();
+  confirmDlg({ title: 'Supprimer cette conversation ?', msg: 'Elle sera effacée de cet appareil. Les tâches déjà ajoutées au dashboard ne sont pas touchées.', ok: 'Supprimer', danger: true,
+    onOk() { AI.convs = AI.convs.filter(c => c.id !== d.id); if (AI.cur === d.id) AI.cur = ''; AI.conv; aiSave(); render(); ACT.aiHist(); },
+    onCancel() { ACT.aiHist(); } });
+};
 CH.aiPick = (d, t) => {
   const m = AI.msgs[+d.id], p = m && m.plan; if (!p || p.applied) return;
   const it = d.g === 'g' ? p.goal : ({ t: p.tasks, h: p.habits, r: p.reminders }[d.g] || [])[+d.k];
@@ -2001,10 +2069,10 @@ CH.aiPick = (d, t) => {
 };
 ACT.aiApply = d => {
   const m = AI.msgs[+d.id], p = m && m.plan; if (!p || p.applied) return;
-  const mods = ['tasks', 'goals', 'habits', 'reminders'], snap = mods.map(k => [k, JSON.stringify(S[k])]), tag = p.title.slice(0, 40), t0 = today();
+  const mods = ['tasks', 'goals', 'habits', 'reminders'], snap = mods.map(k => [k, JSON.stringify(S[k])]), tag = p.title.slice(0, 60), t0 = today();
   let n = 0;
-  for (const t of p.tasks.filter(x => x.on)) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, tags: [tag], note: t.note, done: false, doneAt: '', created: t0 }); n++; }
-  if (p.goal && p.goal.on) { S.goals.items.push({ id: uid(), title: p.goal.title, desc: p.goal.desc, due: p.goal.due, cat: 'Apprentissage', status: 'active', steps: p.goal.steps.map(s => ({ id: uid(), text: s, done: false })) }); n++; }
+  for (const t of p.tasks.filter(x => x.on)) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, tags: [], note: t.note, done: false, doneAt: '', created: t0 }); n++; }
+  if (p.goal && p.goal.on) { S.goals.items.push({ id: uid(), title: p.goal.title, desc: p.goal.desc, due: p.goal.due, cat: tag.slice(0, 40), status: 'active', steps: p.goal.steps.map(s => ({ id: uid(), text: s, done: false })) }); n++; }
   p.habits.filter(x => x.on).forEach((h, i) => { S.habits.items.push({ id: uid(), name: h.name, icon: h.icon, color: HABIT_COLORS[(S.habits.items.length + i) % HABIT_COLORS.length][0], freq: h.days.length ? 'days' : 'daily', days: h.days, target: 0, unit: '', step: 1, created: t0, log: {} }); n++; });
   for (const r of p.reminders.filter(x => x.on)) { S.reminders.items.push({ id: uid(), title: r.title, at: r.at, repeat: r.repeat, fired: false, pending: '' }); n++; }
   if (!n) return;

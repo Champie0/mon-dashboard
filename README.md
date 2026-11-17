@@ -135,3 +135,9 @@ La section **Assistant IA** (touche `8`) génère un planning à partir d'une de
 - Fournisseur : OpenRouter, avec un modèle gratuit (nom finissant par `:free`), sans carte bancaire. Les limites de débit de l'offre gratuite s'appliquent. Le modèle est modifiable.
 - La clé API est enregistrée uniquement dans le navigateur (`md:ai`) : elle n'est ni synchronisée avec Firestore ni incluse dans l'export JSON.
 - Par défaut, les titres des tâches en cours sont envoyés avec la demande pour éviter les conflits ; désactivable dans la configuration.
+
+### Projets, historique et modèle utilisé
+
+- **Projets** : chaque tâche peut appartenir à un projet (champ « Projet » du formulaire). Dans Tâches, le filtre « Projet » et l'affichage « Par projet » regroupent les tâches avec l'avancement de chaque projet. Les plans de l'assistant créent automatiquement un projet portant le nom du plan.
+- **Historique** : les conversations avec l'assistant sont conservées (30 au plus) et se rouvrent depuis le bouton « Historique ». Elles restent sur l'appareil : ni synchronisées ni exportées.
+- **Modèle utilisé** : sous chaque réponse, une ligne indique quel modèle gratuit a répondu.
