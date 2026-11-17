@@ -235,3 +235,10 @@ qui joue. Non connecté, elle propose « Connecter mon Spotify ». Le bouton ♪
 Connecté avec GitHub, tes données (tâches, habitudes, objectifs, finances, journal, rappels, accueil) sont dans ton compte et reviennent après
 un effacement des données du navigateur (Ctrl+Maj+Suppr). Désormais le thème, les options d'affichage et le lien musique suivent aussi le compte.
 Restent propres à chaque appareil, volontairement : la clé OpenRouter et la connexion Spotify.
+
+## Version 2.5.0 — infos musicales et DJ IA
+
+Sous la console Spotify : album et année, temps écoulé, genres de l'artiste (ou style estimé par l'IA via « Quel style ? »), aléatoire / répéter / volume.
+**DJ IA** : tu demandes (« musique calme pour coder », « même style »…), un modèle gratuit d'OpenRouter (la clé de l'Assistant IA) choisit des titres,
+Spotify les retrouve et les lance ou les ajoute à la file. Commandes possibles : pause, suivant, volume, aléatoire. Seuls des modèles « :free » sont utilisés.
+Limite Spotify : en mode développement, l'API ne fournit plus popularité, ni recommandations ni analyse audio ; le DJ s'appuie donc sur la culture musicale du modèle.

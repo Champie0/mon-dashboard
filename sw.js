@@ -4,7 +4,7 @@
    - Icônes et manifeste : copie locale d'abord.
    - Rien d'autre n'est intercepté : Firebase, l'IA (OpenRouter) et GitHub passent directement par le réseau.
    Changer VERSION à chaque mise en ligne pour renouveler la copie locale. */
-const VERSION = 'md-2.4.1';
+const VERSION = 'md-2.5.0';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

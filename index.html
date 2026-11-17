@@ -648,6 +648,19 @@ dialog::backdrop{background:radial-gradient(60% 60% at 50% 40%,rgba(60,70,160,.2
 .sp-side .sp-title{font-family:var(--font-d);font-size:clamp(28px,3.4vw,48px);font-weight:700;letter-spacing:-.04em;line-height:1.08;overflow-wrap:anywhere}
 .sp-side .sp-sub{font-size:var(--fs-lg);color:var(--text-2)}
 @media (max-width:820px){.sp-home-in{grid-template-columns:1fr;gap:var(--sp-3)}.sp-home-in .sp-dev{max-width:320px;margin-inline:auto}}
+.sp-extra{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-3)}
+.sp-meta{display:flex;flex-wrap:wrap;gap:4px var(--sp-3);font-size:var(--fs-sm);color:var(--text-2)}
+.sp-meta .sp-time{font-variant-numeric:tabular-nums}
+.sp-genres{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:26px}
+.sp-opts{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center}
+.sp-opts .btn[aria-pressed=true]{background:linear-gradient(135deg,color-mix(in srgb,var(--olive) 38%,transparent),transparent),var(--key-1),var(--fill-0);border-color:color-mix(in srgb,var(--olive) 60%,transparent)}
+.sp-volw{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-sm);color:var(--text-2);flex:1;min-width:150px}
+.sp-volw input{flex:1;min-width:80px}
+.sp-dj{display:flex;gap:var(--sp-2)}
+.sp-dj input{flex:1;min-width:0;height:var(--h-md);font-size:var(--fs-sm)}
+.sp-sugg{display:flex;flex-wrap:wrap;gap:var(--sp-1)}
+.sp-say{min-height:1.4em}
+#music{max-height:calc(100vh - 32px);overflow:auto}
 .sp-connect{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--fill-0)}
 .sp-connect summary{cursor:pointer;font-weight:620;font-size:var(--fs-sm)}
 .sp-connect ol{margin:var(--sp-2) 0 var(--sp-2) 18px;padding:0;list-style:decimal}
@@ -824,7 +837,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '2.4.1', APP_DATE = '2026-11-17';
+const APP_VERSION = '2.5.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -2937,7 +2950,7 @@ const MUSIC_SUGG = [['Lofi Beats', 'https://open.spotify.com/playlist/37i9dQZF1D
 const SP_CLIENT = '9417e9f3821e492495220c75d16f6d85';
 const spCid = () => ls.get('spclient', '') || SP_CLIENT;
 function spSaveMusic(u) { if (u) ls.set('music', u); else ls.del('music'); if (S.home && (S.home.music || '') !== u) { S.home.music = u; commit('home', { silent: true }); } }
-const SP = { st: null, at: 0, n: 0, busy: false };
+const SP = { st: null, at: 0, n: 0, busy: false, gen: {}, guess: {}, say: '', djBusy: false };
 let musicOpen = false;
 const spRedirect = () => location.origin + location.pathname;
 const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -2958,9 +2971,9 @@ async function spToken() {
   try { const j = await spTokenCall({ grant_type: 'refresh_token', refresh_token: t.refresh, client_id: spCid() }); spStore(j, t); return j.access_token; }
   catch (e) { ls.del('sp'); SP.st = null; renderMusic(); return null; }
 }
-async function spApi(method, path) {
+async function spApi(method, path, body) {
   const tk = await spToken(); if (!tk) return null;
-  try { return await fetch('https://api.spotify.com/v1' + path, { method, headers: { Authorization: 'Bearer ' + tk } }); } catch (e) { return null; }
+  try { return await fetch('https://api.spotify.com/v1' + path, { method, headers: { Authorization: 'Bearer ' + tk, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined }); } catch (e) { return null; }
 }
 async function spConnect() {
   const id = spCid();
@@ -2987,10 +3000,24 @@ function spDevHTML() {
       <div class="sp-bar" aria-hidden="true"><i class="sp-fill"></i></div>
       <div class="sp-ctl"><button data-a="spPrev" aria-label="Précédent">${SPI.prev}</button><button data-a="spToggle" class="sp-tog" aria-label="Lecture / pause">${SPI.play}</button><button data-a="spNext" aria-label="Suivant">${SPI.next}</button></div></div>`;
 }
+/* Infos du titre, réglages de lecture et DJ IA : sous la console (panneau) et à côté d'elle (Accueil) */
+function spExtraHTML() {
+  return `<div class="sp-extra">
+    <div class="sp-meta"><span class="sp-album"></span><span class="sp-time"></span></div>
+    <div class="sp-genres" aria-label="Genre musical"></div>
+    <div class="sp-opts">
+      <button class="btn sm sp-shuf" data-a="spShuffle" aria-pressed="false" type="button">Aléatoire</button>
+      <button class="btn sm sp-rep" data-a="spRepeat" aria-pressed="false" type="button">Répéter</button>
+      <label class="sp-volw">Volume <input type="range" class="sp-vol" min="0" max="100" step="1" value="50" aria-label="Volume"></label>
+    </div>
+    <form class="sp-dj" data-s="spDj"><input type="text" name="q" placeholder="Demandez à l’IA : musique calme pour coder…" aria-label="Demander une musique à l’IA" autocomplete="off" maxlength="300"><button class="btn sm primary" type="submit">DJ IA</button></form>
+    <div class="sp-sugg">${[['Même style', 'Mets des titres dans le même style que celui en cours'], ['Plus calme', 'Mets quelque chose de plus calme'], ['Pour bosser', 'Mets une playlist de concentration pour travailler'], ['Énergie', 'Mets de la musique énergique']].map(([n, q]) => `<button class="btn sm" type="button" data-a="spDjQ" data-q="${A(q)}">${esc(n)}</button>`).join('')}</div>
+    <p class="sp-say small muted" aria-live="polite"></p></div>`;
+}
 /* Carte de l'Accueil : même lecteur, en grand, ou bouton de connexion */
 function spHomeHTML() {
   try {
-    if (ls.get('sp', null)) return `<section class="hud sp-home" data-m="music" id="homeMusic"><h2>Musique</h2><div class="sp-home-in">${spDevHTML()}<div class="sp-side"><span class="muted small">En cours de lecture</span><b class="sp-title">Chargement…</b><span class="sp-sub"></span><span class="muted small sp-dev-name"></span></div></div></section>`;
+    if (ls.get('sp', null)) return `<section class="hud sp-home" data-m="music" id="homeMusic"><h2>Musique</h2><div class="sp-home-in">${spDevHTML()}<div class="sp-side"><span class="muted small">En cours de lecture</span><b class="sp-title">Chargement…</b><span class="sp-sub"></span><span class="muted small sp-dev-name"></span>${spExtraHTML()}</div></div></section>`;
     return `<section class="hud sp-home" data-m="music" id="homeMusic"><h2>Musique</h2><div class="empty"><b>Votre Spotify, ici</b>Voyez et pilotez ce que vous écoutez, sur votre téléphone comme sur l’ordinateur.<br><button class="btn primary" data-a="spLogin">Connecter mon Spotify</button></div></section>`;
   } catch (e) { return ''; }
 }
@@ -3003,7 +3030,7 @@ function renderMusic() {
   if (el.dataset.key === key && el.firstChild) return;   /* l'iframe ne bouge pas : la musique continue quand on navigue */
   el.dataset.key = key;
   if (connected) {
-    el.innerHTML = spDevHTML() + `<div class="row"><span class="small muted grow sp-dev-name"></span><button class="btn sm ghost" data-a="spOff" type="button">Déconnecter</button></div>`;
+    el.innerHTML = spDevHTML() + spExtraHTML() + `<div class="row"><span class="small muted grow sp-dev-name"></span><button class="btn sm ghost" data-a="spOff" type="button">Déconnecter</button></div>`;
     spPaint(); return;
   }
   el.innerHTML = `<h2>Musique</h2>
@@ -3030,16 +3057,37 @@ function spPaint() {
   document.querySelectorAll('.sp-title').forEach(e => { e.textContent = title; });
   document.querySelectorAll('.sp-sub').forEach(e => { e.textContent = sub; });
   document.querySelectorAll('.sp-dev-name').forEach(e => { e.textContent = s && s.device ? 'Sur : ' + s.device.name : ''; });
+  const fmt = ms => { const t = Math.floor(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  const album = it && it.album ? [it.album.name, str(it.album.release_date).slice(0, 4)].filter(Boolean).join(' · ') : '';
+  document.querySelectorAll('.sp-album').forEach(e => { e.textContent = album; });
+  document.querySelectorAll('.sp-time').forEach(e => { e.textContent = it ? fmt(pos) + ' / ' + fmt(it.duration_ms) : ''; });
+  const aid = it && it.artists && it.artists[0] && it.artists[0].id, gen = aid ? arr(SP.gen[aid]) : [], guess = it ? SP.guess[it.id] : '';
+  const gh = !it ? '' : gen.length ? gen.slice(0, 5).map(g => `<span class="chip">${esc(g)}</span>`).join('')
+    : guess ? guess.split(',').slice(0, 4).map(g => `<span class="chip">${esc(g.trim())}</span>`).join('') + '<span class="muted small">(estimé par l’IA)</span>'
+    : `<button class="btn sm ghost" type="button" data-a="spStyle">Quel style ?</button>`;
+  document.querySelectorAll('.sp-genres').forEach(e => { if (e.dataset.k !== gh) { e.dataset.k = gh; e.innerHTML = gh; } });
+  document.querySelectorAll('.sp-shuf').forEach(e => e.setAttribute('aria-pressed', String(!!(s && s.shuffle_state))));
+  document.querySelectorAll('.sp-rep').forEach(e => { const r = s && s.repeat_state || 'off'; e.setAttribute('aria-pressed', String(r !== 'off')); e.textContent = r === 'track' ? 'Répéter : titre' : r === 'context' ? 'Répéter : liste' : 'Répéter'; });
+  document.querySelectorAll('.sp-vol').forEach(e => { if (document.activeElement !== e && s && s.device && s.device.volume_percent != null) e.value = s.device.volume_percent; });
+  document.querySelectorAll('.sp-say').forEach(e => { e.textContent = SP.say; });
+}
+/* Genre de l'artiste (Spotify le fournit encore pour un artiste isolé ; sinon l'IA peut estimer le style) */
+async function spGenres() {
+  const it = SP.st && SP.st.item, aid = it && it.artists && it.artists[0] && it.artists[0].id;
+  if (!aid || aid in SP.gen) return;
+  SP.gen[aid] = [];
+  const r = await spApi('GET', '/artists/' + aid);
+  if (r && r.ok) { const j = await r.json().catch(() => ({})); SP.gen[aid] = arr(j.genres).filter(g => typeof g === 'string'); spPaint(); }
 }
 async function spPoll() {
   if (!(musicOpen || $('#homeMusic .sp-dev')) || !ls.get('sp', null) || SP.busy) return;
   SP.busy = true;
   try { const r = await spApi('GET', '/me/player'); if (r) { if (r.status === 204) SP.st = null; else if (r.ok) { SP.st = await r.json(); SP.at = Date.now(); } } } finally { SP.busy = false; }
-  spPaint();
+  spPaint(); spGenres();
 }
 setInterval(() => { if (!(musicOpen || $('#homeMusic .sp-dev')) || !ls.get('sp', null)) return; spPaint(); if (++SP.n % 4 === 0) spPoll(); }, 1000);
-async function spCmd(method, path) {
-  const r = await spApi(method, path);
+async function spCmd(method, path, body) {
+  const r = await spApi(method, path, body);
   if (r && r.status === 403) toast('Spotify Premium est nécessaire pour piloter la lecture d’ici.');
   else if (r && r.status === 404) toast('Aucun appareil actif : lancez d’abord un titre dans Spotify.');
   else if (r && !r.ok && r.status !== 204) toast('Spotify n’a pas répondu (' + r.status + ').');
@@ -3049,6 +3097,54 @@ ACT.musicToggle = () => { musicOpen = !musicOpen; renderMusic(); if (musicOpen) 
 ACT.musicPick = d => { spSaveMusic(d.u); renderMusic(); };
 ACT.musicClear = () => { spSaveMusic(''); renderMusic(); };
 ACT.spLogin = () => spConnect();
+ACT.spShuffle = () => spCmd('PUT', '/me/player/shuffle?state=' + !(SP.st && SP.st.shuffle_state));
+ACT.spRepeat = () => spCmd('PUT', '/me/player/repeat?state=' + ({ off: 'context', context: 'track', track: 'off' })[SP.st && SP.st.repeat_state || 'off']);
+document.addEventListener('change', e => { const v = e.target.closest && e.target.closest('.sp-vol'); if (v) spCmd('PUT', '/me/player/volume?volume_percent=' + Math.max(0, Math.min(100, v.value | 0))); });
+const spAiReady = () => { if (aiCfg().key) return true; SP.say = 'Ajoutez d’abord votre clé OpenRouter gratuite dans « Assistant IA » → Configurer.'; spPaint(); return false; };
+ACT.spStyle = async () => {
+  const it = SP.st && SP.st.item; if (!it || !spAiReady()) return;
+  SP.say = 'L’IA cherche le style…'; spPaint(); AI.stopped = false;
+  try { const { out } = await aiCall([{ role: 'user', text: `Titre : ${it.name}\nArtiste : ${(it.artists || []).map(a => a.name).join(', ')}` }], 'Tu es un expert musical. Réponds uniquement par 2 à 3 genres ou styles musicaux en français, séparés par des virgules, sans phrase ni point.'); SP.guess[it.id] = str(out, 120).replace(/[.\n]/g, ' ').trim(); SP.say = ''; }
+  catch (e) { SP.say = e && e.message || 'L’IA n’a pas répondu.'; }
+  spPaint();
+};
+/* DJ IA : un modèle gratuit d'OpenRouter choisit les titres, Spotify les retrouve et les lance (jamais de confiance aveugle : liste blanche de commandes) */
+const SP_DJ_SYS = `Tu es un DJ. Tu pilotes la lecture Spotify de l'utilisateur. Réponds UNIQUEMENT par un bloc \`\`\`json\`\`\` contenant :
+{"say":"une phrase courte en français","action":"play"|"queue"|"none","tracks":["Artiste - Titre", ...],"cmd":null|"pause"|"resume"|"next"|"previous"|"shuffle_on"|"shuffle_off"|"volume:NN"}
+Règles : 5 à 8 titres réels et connus au maximum, format exact "Artiste - Titre" ; "play" lance la liste tout de suite, "queue" l'ajoute à la suite ; pour une simple commande (pause, suivant, volume…) mets "tracks":[] et "action":"none".`;
+function spDjParse(raw) {
+  const m = /```(?:json)?\s*([\s\S]*?)```/.exec(raw); let t = m ? m[1] : raw;
+  const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a < 0 || b < a) return null;
+  try { const o = JSON.parse(t.slice(a, b + 1)); return isObj(o) ? o : null; } catch (e) { return null; }
+}
+async function spDj(text) {
+  text = str(text, 300).trim(); if (!text || SP.djBusy || !spAiReady()) return;
+  SP.djBusy = true; SP.say = 'Le DJ réfléchit…'; spPaint(); AI.stopped = false;
+  try {
+    const it = SP.st && SP.st.item, aid = it && it.artists && it.artists[0] && it.artists[0].id;
+    const ctx = it ? `En cours : « ${it.name} » de ${(it.artists || []).map(a => a.name).join(', ')}${aid && arr(SP.gen[aid]).length ? ' (style : ' + SP.gen[aid].slice(0, 4).join(', ') + ')' : ''}.` : 'Rien en cours de lecture.';
+    const { out } = await aiCall([{ role: 'user', text: ctx + '\nDemande : ' + text }], SP_DJ_SYS);
+    const o = spDjParse(out); if (!o) throw new Error('Le DJ n’a pas renvoyé de réponse exploitable. Reformulez.');
+    const cmd = str(o.cmd, 20), act = ['play', 'queue'].includes(o.action) ? o.action : 'none', names = arr(o.tracks).map(x => str(x, 120).trim()).filter(Boolean).slice(0, 8);
+    let msg = str(o.say, 200);
+    if (cmd === 'pause') await spCmd('PUT', '/me/player/pause');
+    else if (cmd === 'resume') await spCmd('PUT', '/me/player/play');
+    else if (cmd === 'next') await spCmd('POST', '/me/player/next');
+    else if (cmd === 'previous') await spCmd('POST', '/me/player/previous');
+    else if (cmd === 'shuffle_on' || cmd === 'shuffle_off') await spCmd('PUT', '/me/player/shuffle?state=' + (cmd === 'shuffle_on'));
+    else if (/^volume:\d{1,3}$/.test(cmd)) await spCmd('PUT', '/me/player/volume?volume_percent=' + Math.min(100, +cmd.slice(7)));
+    if (act !== 'none' && names.length) {
+      const found = (await Promise.all(names.map(async n => { const r = await spApi('GET', '/search?type=track&limit=1&q=' + encodeURIComponent(n.replace(/\s+-\s+/, ' '))); const j = r && r.ok ? await r.json().catch(() => null) : null; const t = j && j.tracks && j.tracks.items && j.tracks.items[0]; return t ? t.uri : null; }))).filter(Boolean);
+      if (!found.length) msg += ' (Aucun de ces titres n’a été trouvé sur Spotify.)';
+      else if (act === 'play') { await spCmd('PUT', '/me/player/play', { uris: found }); msg += ` (${found.length}/${names.length} titres lancés)`; }
+      else { for (const u of found) await spApi('POST', '/me/player/queue?uri=' + encodeURIComponent(u)); msg += ` (${found.length} titres ajoutés à la suite)`; setTimeout(spPoll, 450); }
+    }
+    SP.say = msg || 'C’est fait.';
+  } catch (e) { SP.say = e && e.message || 'Le DJ n’a pas répondu.'; }
+  SP.djBusy = false; spPaint();
+}
+SUB.spDj = f => { const q = f.elements.q.value; f.elements.q.value = ''; spDj(q); };
+ACT.spDjQ = d => spDj(d.q);
 ACT.spPrev = () => spCmd('POST', '/me/player/previous');
 ACT.spNext = () => spCmd('POST', '/me/player/next');
 ACT.spToggle = () => spCmd('PUT', SP.st && SP.st.is_playing ? '/me/player/pause' : '/me/player/play');
