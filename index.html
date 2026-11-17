@@ -642,6 +642,12 @@ dialog::backdrop{background:radial-gradient(60% 60% at 50% 40%,rgba(60,70,160,.2
 #music form input{flex:1;min-width:0;height:var(--h-md);font-size:var(--fs-sm)}
 #music .row{margin-top:var(--sp-2)}
 #music .sugg{display:flex;flex-wrap:wrap;gap:var(--sp-1);margin-top:var(--sp-2)}
+.gh>.sp-home{grid-column:1/-1}
+.sp-home-in{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:var(--sp-5);align-items:center}
+.sp-side{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sp-side .sp-title{font-family:var(--font-d);font-size:clamp(28px,3.4vw,48px);font-weight:700;letter-spacing:-.04em;line-height:1.08;overflow-wrap:anywhere}
+.sp-side .sp-sub{font-size:var(--fs-lg);color:var(--text-2)}
+@media (max-width:820px){.sp-home-in{grid-template-columns:1fr;gap:var(--sp-3)}.sp-home-in .sp-dev{max-width:320px;margin-inline:auto}}
 .sp-connect{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--fill-0)}
 .sp-connect summary{cursor:pointer;font-weight:620;font-size:var(--fs-sm)}
 .sp-connect ol{margin:var(--sp-2) 0 var(--sp-2) 18px;padding:0;list-style:decimal}
@@ -705,6 +711,7 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
   .main{padding-inline:var(--sp-4)}
 }
 @media (max-width:1100px){.gh{grid-template-columns:1fr}}
+@media (max-width:480px){.top .pill{display:none}}
 @media (max-width:900px){.page-cols{grid-template-columns:1fr}.page-side{position:static}}
 
 /* Téléphone : le dock devient une barre d'onglets flottante en bas, la page passe sous une barre de titre compacte */
@@ -728,6 +735,7 @@ dialog[open]::backdrop{animation:fade .3s ease-out}
   .top h1,h1{font-size:24px;letter-spacing:-.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .top>div:first-child{flex:1;min-width:0}
   .pill{font-size:0;gap:0;padding:0 10px;height:28px}
+  .music-btn{width:40px;height:40px}
   .top-r .btn{height:var(--h-sm);padding:0 12px;font-size:12.5px}
   .top-r{gap:6px}
   .secno{display:none}
@@ -816,7 +824,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '2.3.1', APP_DATE = '2026-11-17';
+const APP_VERSION = '2.4.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -1390,7 +1398,7 @@ function render() {
   $('#secno').textContent = 'Section ' + sec.no; $('#sectitle').textContent = sec.label;
   document.title = sec.label + ' · Mon dashboard';
   edFlush();
-  try { v.innerHTML = PAGE ? pageHTML() : VIEWS[cur](); }
+  try { v.innerHTML = PAGE ? pageHTML() : VIEWS[cur](); if (!PAGE && cur === 'accueil') setTimeout(() => { try { spPaint(); spPoll(); } catch (e) { } }, 0); }
   catch (e) {
     console.error(e);
     v.innerHTML = `<div class="hud">${empty('Cette section a rencontré un problème', 'Les autres sections continuent de fonctionner et vos données ne sont pas effacées.', '<button class="btn" data-a="exportData">Exporter mes données</button>')}</div>`;
@@ -1528,6 +1536,7 @@ VIEWS.accueil = () => {
       ${next.map(r => `<div class="kv"><span>🔔 ${esc(r.title)}</span><span class="muted" style="white-space:nowrap">${esc(fmtAt(r.at))}</span></div>`).join('')}
       ${pend.length + dl.length + next.length ? '' : empty('Horizon dégagé', 'Aucune échéance proche, aucun rappel à venir.')}
     </section>
+    ${spHomeHTML()}
   </div></div>`;
 };
 ACT.quoteNext = () => { quoteShift++; render(); };
@@ -2957,10 +2966,24 @@ async function spCallback() {
   history.replaceState(null, '', location.pathname + location.hash);
   ls.del('spv'); ls.del('sps');
   if (err || !code || !okState || !v) { if (err || code) toast('Connexion à Spotify annulée ou refusée.'); return; }
-  try { spStore(await spTokenCall({ grant_type: 'authorization_code', code, redirect_uri: spRedirect(), client_id: spCid(), code_verifier: v })); musicOpen = true; toast('Spotify est connecté.'); renderMusic(); spPoll(); }
+  try { spStore(await spTokenCall({ grant_type: 'authorization_code', code, redirect_uri: spRedirect(), client_id: spCid(), code_verifier: v })); musicOpen = !$('#homeMusic'); toast('Spotify est connecté.'); renderMusic(); if ($('#homeMusic')) render(); spPoll(); }
   catch (e) { toast('Connexion à Spotify impossible : vérifiez le Client ID et l’adresse de redirection.'); }
 }
 const SPI = { prev: '<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M6 5h2.4v14H6zM20 5v14L9.5 12z"/></svg>', next: '<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M15.6 5H18v14h-2.4zM4 5l10.5 7L4 19z"/></svg>', play: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>', pause: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M6 4.5h4.4v15H6zM13.6 4.5H18v15h-4.4z"/></svg>' };
+function spDevHTML() {
+  return `<div class="sp-dev" role="group" aria-label="Lecteur Spotify">
+      <div class="sp-art"><img class="sp-img" alt="" hidden><div class="sp-none">♪</div></div>
+      <div class="sp-info"><b class="sp-title">Chargement…</b><span class="sp-sub"></span></div>
+      <div class="sp-bar" aria-hidden="true"><i class="sp-fill"></i></div>
+      <div class="sp-ctl"><button data-a="spPrev" aria-label="Précédent">${SPI.prev}</button><button data-a="spToggle" class="sp-tog" aria-label="Lecture / pause">${SPI.play}</button><button data-a="spNext" aria-label="Suivant">${SPI.next}</button></div></div>`;
+}
+/* Carte de l'Accueil : même lecteur, en grand, ou bouton de connexion */
+function spHomeHTML() {
+  try {
+    if (ls.get('sp', null)) return `<section class="hud sp-home" data-m="music" id="homeMusic"><h2>Musique</h2><div class="sp-home-in">${spDevHTML()}<div class="sp-side"><span class="muted small">En cours de lecture</span><b class="sp-title">Chargement…</b><span class="sp-sub"></span><span class="muted small sp-dev-name"></span></div></div></section>`;
+    return `<section class="hud sp-home" data-m="music" id="homeMusic"><h2>Musique</h2><div class="empty"><b>Votre Spotify, ici</b>Voyez et pilotez ce que vous écoutez, sur votre téléphone comme sur l’ordinateur.<br><button class="btn primary" data-a="spLogin">Connecter mon Spotify</button></div></section>`;
+  } catch (e) { return ''; }
+}
 function renderMusic() {
   const el = $('#music'); if (!el) return;
   el.classList.toggle('open', musicOpen); el.setAttribute('aria-hidden', String(!musicOpen));
@@ -2970,12 +2993,7 @@ function renderMusic() {
   if (el.dataset.key === key && el.firstChild) return;   /* l'iframe ne bouge pas : la musique continue quand on navigue */
   el.dataset.key = key;
   if (connected) {
-    el.innerHTML = `<div class="sp-dev" role="group" aria-label="Lecteur Spotify">
-      <div class="sp-art"><img id="spArt" alt="" hidden><div id="spNone" class="sp-none">♪</div></div>
-      <div class="sp-info"><b id="spTitle">Chargement…</b><span id="spSub"></span></div>
-      <div class="sp-bar" aria-hidden="true"><i id="spBar"></i></div>
-      <div class="sp-ctl"><button data-a="spPrev" aria-label="Précédent">${SPI.prev}</button><button data-a="spToggle" id="spTog" aria-label="Lecture / pause">${SPI.play}</button><button data-a="spNext" aria-label="Suivant">${SPI.next}</button></div></div>
-      <div class="row"><span class="small muted grow" id="spDev"></span><button class="btn sm ghost" data-a="spOff" type="button">Déconnecter</button></div>`;
+    el.innerHTML = spDevHTML() + `<div class="row"><span class="small muted grow sp-dev-name"></span><button class="btn sm ghost" data-a="spOff" type="button">Déconnecter</button></div>`;
     spPaint(); return;
   }
   el.innerHTML = `<h2>Musique</h2>
@@ -2990,24 +3008,26 @@ function renderMusic() {
       : `<div class="sugg">${MUSIC_SUGG.map(([n, u2]) => `<button class="btn sm" type="button" data-a="musicPick" data-u="${A(u2)}">${esc(n)}</button>`).join('')}</div>`);
 }
 function spPaint() {
-  if (!$('#spTitle')) return;
-  const s = SP.st, it = s && s.item;
-  const img = it && it.album && it.album.images && it.album.images[0], art = $('#spArt');
-  if (img) { if (art.getAttribute('src') !== img.url) art.src = img.url; art.hidden = false; $('#spNone').hidden = true; } else { art.hidden = true; $('#spNone').hidden = false; }
-  $('#spTitle').textContent = it ? it.name : 'Rien en lecture';
-  $('#spSub').textContent = it ? (it.artists || []).map(x => x.name).join(', ') : 'Lancez un titre dans Spotify (téléphone, ordinateur…) : il apparaîtra ici.';
+  const s = SP.st, it = s && s.item, img = it && it.album && it.album.images && it.album.images[0];
   const pos = it ? Math.min(it.duration_ms, (s.progress_ms || 0) + (s.is_playing ? Date.now() - SP.at : 0)) : 0;
-  $('#spBar').style.width = (it && it.duration_ms ? pos / it.duration_ms * 100 : 0) + '%';
-  $('#spTog').innerHTML = s && s.is_playing ? SPI.pause : SPI.play;
-  $('#spDev').textContent = s && s.device ? 'Sur : ' + s.device.name : '';
+  const title = it ? it.name : 'Rien en lecture', sub = it ? (it.artists || []).map(x => x.name).join(', ') : 'Lancez un titre dans Spotify (téléphone, ordinateur…) : il apparaît ici.';
+  document.querySelectorAll('.sp-dev').forEach(d => {
+    const im = d.querySelector('.sp-img'), no = d.querySelector('.sp-none');
+    if (img) { if (im.getAttribute('src') !== img.url) im.src = img.url; im.hidden = false; no.hidden = true; } else { im.hidden = true; no.hidden = false; }
+    d.querySelector('.sp-fill').style.width = (it && it.duration_ms ? pos / it.duration_ms * 100 : 0) + '%';
+    d.querySelector('.sp-tog').innerHTML = s && s.is_playing ? SPI.pause : SPI.play;
+  });
+  document.querySelectorAll('.sp-title').forEach(e => { e.textContent = title; });
+  document.querySelectorAll('.sp-sub').forEach(e => { e.textContent = sub; });
+  document.querySelectorAll('.sp-dev-name').forEach(e => { e.textContent = s && s.device ? 'Sur : ' + s.device.name : ''; });
 }
 async function spPoll() {
-  if (!musicOpen || !ls.get('sp', null) || SP.busy) return;
+  if (!(musicOpen || $('#homeMusic .sp-dev')) || !ls.get('sp', null) || SP.busy) return;
   SP.busy = true;
   try { const r = await spApi('GET', '/me/player'); if (r) { if (r.status === 204) SP.st = null; else if (r.ok) { SP.st = await r.json(); SP.at = Date.now(); } } } finally { SP.busy = false; }
   spPaint();
 }
-setInterval(() => { if (!musicOpen || !ls.get('sp', null)) return; spPaint(); if (++SP.n % 4 === 0) spPoll(); }, 1000);
+setInterval(() => { if (!(musicOpen || $('#homeMusic .sp-dev')) || !ls.get('sp', null)) return; spPaint(); if (++SP.n % 4 === 0) spPoll(); }, 1000);
 async function spCmd(method, path) {
   const r = await spApi(method, path);
   if (r && r.status === 403) toast('Spotify Premium est nécessaire pour piloter la lecture d’ici.');
@@ -3022,7 +3042,7 @@ ACT.spLogin = () => spConnect();
 ACT.spPrev = () => spCmd('POST', '/me/player/previous');
 ACT.spNext = () => spCmd('POST', '/me/player/next');
 ACT.spToggle = () => spCmd('PUT', SP.st && SP.st.is_playing ? '/me/player/pause' : '/me/player/play');
-ACT.spOff = () => { ls.del('sp'); SP.st = null; renderMusic(); toast('Spotify déconnecté de ce navigateur.'); };
+ACT.spOff = () => { ls.del('sp'); SP.st = null; renderMusic(); if ($('#homeMusic')) render(); toast('Spotify déconnecté de ce navigateur.'); };
 SUB.musicSet = f => { const v = f.elements.u.value.trim(); if (!spotifyEmbed(v)) return toast('Ce lien n’est pas un lien Spotify (open.spotify.com/playlist/…).'); ls.set('music', v); renderMusic(); };
 SUB.spClient = f => { const v = f.elements.c.value.trim(); if (!/^[a-f0-9]{32}$/i.test(v)) return toast('Un Client ID Spotify fait 32 caractères (lettres a–f et chiffres).'); ls.set('spclient', v); spConnect(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && musicOpen && !$('#dlg').open) { musicOpen = false; renderMusic(); } });

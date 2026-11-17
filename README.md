@@ -224,3 +224,8 @@ s'écoute dans le lecteur intégré.
 Le Client ID de l'application Spotify « Mon dashboard » est intégré au code (il est public par conception avec PKCE) :
 le panneau ♪ propose directement « Connecter mon Spotify », sur chaque appareil, sans rien à coller.
 Un Client ID personnel reste possible dans « Utiliser ma propre application Spotify ».
+
+## Version 2.4.0 — Spotify sur l'Accueil
+
+Une carte « Musique » pleine largeur en bas de l'Accueil : la console verte en grand avec le titre en cours, l'artiste et l'appareil
+qui joue. Non connecté, elle propose « Connecter mon Spotify ». Le bouton ♪ du haut garde son panneau flottant.
