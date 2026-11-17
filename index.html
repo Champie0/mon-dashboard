@@ -1861,6 +1861,7 @@ function aiSystem() {
 
 async function aiCall(msgs, system) {
   const c = aiCfg(), model = c.model || AI_PROVIDERS[c.provider].model;
+  if (!/:free$/.test(model)) throw new Error('Modèle refusé : seuls les modèles gratuits (nom finissant par « :free ») sont autorisés, pour éviter tout coût.');
   const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 90000);
   let url, body, headers = { 'Content-Type': 'application/json' };
   url = 'https://openrouter.ai/api/v1/chat/completions';
