@@ -565,7 +565,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.7.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.7.1', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -2297,8 +2297,8 @@ function planHTML(p, i) {
   const row = (g, k, on, label, sub) => `<label class="plan-it"><input type="checkbox" data-c="aiPick" data-id="${i}" data-g="${g}" data-k="${k}"${on ? ' checked' : ''}${dis}><span><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></label>`;
   const n = p.tasks.filter(x => x.on).length + p.habits.filter(x => x.on).length + p.reminders.filter(x => x.on).length + (p.goal && p.goal.on ? 1 : 0);
   let h = `<div class="plan"><div class="row"><b class="grow">${esc(p.title)}</b>${p.applied ? '<span class="chip ok">Ajouté au dashboard</span>' : ''}</div>`;
-  if (p.goal) h += `<h3>Objectif</h3>${row('g', 0, p.goal.on, p.goal.title, [p.goal.due && 'échéance ' + fmtShort(p.goal.due), p.goal.steps.length && plural(p.goal.steps.length, 'étape', 'étapes')].filter(Boolean).join(' · '))}`;
-  if (p.tasks.length) h += `<h3>Tâches (${p.tasks.length})</h3><div class="plan-list">${p.tasks.map((t, k) => row('t', k, t.on, t.title, [t.due && fmtShort(t.due), t.prio !== 'moyenne' && 'priorité ' + t.prio, t.steps.length && plural(t.steps.length, 'étape', 'étapes'), t.note].filter(Boolean).join(' · '))).join('')}</div>`;
+  if (p.goal) h += `<h3>Objectif</h3>${row('g', 0, p.goal.on, p.goal.title, [p.goal.due && 'échéance ' + fmtShort(p.goal.due), arr(p.goal.steps).length && plural(p.goal.steps.length, 'étape', 'étapes')].filter(Boolean).join(' · '))}`;
+  if (p.tasks.length) h += `<h3>Tâches (${p.tasks.length})</h3><div class="plan-list">${p.tasks.map((t, k) => row('t', k, t.on, t.title, [t.due && fmtShort(t.due), t.prio !== 'moyenne' && 'priorité ' + t.prio, arr(t.steps).length && plural(t.steps.length, 'étape', 'étapes'), t.note].filter(Boolean).join(' · '))).join('')}</div>`;
   if (p.habits.length) h += `<h3>Habitudes</h3>${p.habits.map((x, k) => row('h', k, x.on, x.icon + ' ' + x.name, x.days.length ? x.days.map(d => WD[d]).join(' ') : 'tous les jours')).join('')}`;
   if (p.reminders.length) h += `<h3>Rappels</h3>${p.reminders.map((x, k) => row('r', k, x.on, x.title, fmtAt(x.at) + (x.repeat === 'daily' ? ' · chaque jour' : x.repeat === 'weekly' ? ' · chaque semaine' : ''))).join('')}`;
   if (!p.applied) { const proj = aiProject(AI.conv, p), old = S.tasks.items.filter(t => t.project === proj && !t.done).length; if (old) h += `<p class="small muted" style="margin-top:10px">Remplace les ${plural(old, 'tâche non terminée', 'tâches non terminées')} du projet « ${esc(proj)} » (les tâches terminées sont conservées).</p>`; }
@@ -2393,7 +2393,7 @@ ACT.aiApply = d => {
   const doneTitles = new Set(S.tasks.items.filter(t => t.project === tag && t.done).map(t => norm(t.title)));
   replaced = S.tasks.items.filter(t => t.project === tag && !t.done).length;
   S.tasks.items = S.tasks.items.filter(t => !(t.project === tag && !t.done));
-  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, steps: (t.steps || []).map(x => ({ id: uid(), text: x, done: false })), tags: [], note: '', doc: noteToDoc(t.note), done: false, doneAt: '', created: t0 }); n++; }
+  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, steps: arr(t.steps).map(x => ({ id: uid(), text: str(x, 200), done: false })), tags: [], note: '', doc: noteToDoc(t.note), done: false, doneAt: '', created: t0 }); n++; }
   /* Objectif : mis à jour s'il existe déjà (les étapes déjà cochées restent cochées). */
   if (p.goal && p.goal.on) {
     const g = S.goals.items.find(x => x.cat === tag.slice(0, 40) || norm(x.title) === norm(p.goal.title));
