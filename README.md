@@ -186,3 +186,16 @@ Interface agrandie : titres géants (accueil, pages de tâche, minuteur de conce
 ## Refonte « Liquid Glass 2026 » (v2.0)
 
 Nouvelle composition : **dock de navigation flottant** en verre (centré en haut, plus de barre latérale), **titre de page monumental**, accueil en **grille bento** asymétrique, lignes de liste en pastilles de verre, boutons agrandis (54–58 px) avec **icônes vectorielles** et états survol / actif / focus / désactivé. La matière est un verre épais éclairé (lumière clé, rebond coloré, épaisseur de bord) sur un fond à deux teintes. Sur téléphone, la navigation reste une barre d'onglets flottante en bas. Toute la logique (données, synchronisation, authentification, IA) est inchangée ; le nouveau style est le dernier bloc CSS du fichier.
+
+## Version 2.1.0 — système de design unifié
+
+La feuille de style a été refaite d'un seul bloc : les trois couches empilées
+(premium, XL, refonte v2) sont remplacées par une seule feuille organisée en
+jetons → base → matières → coque → composants → modules → mouvement → adaptation.
+
+- Échelles : texte, espacement, rayons, hauteurs de contrôle (38 / 46 / 50 px, icône 44 px).
+- Quatre niveaux de verre (film, carte, coque, dessus), chacun avec son flou, sa lumière de bord et son ombre.
+- Navigation horizontale flottante en haut ; sur téléphone, barre d'icônes flottante en bas (aucune barre latérale).
+- Sous-pages : le fil d'Ariane remplace le grand titre de section.
+- Graphiques d'habitudes lisibles sur téléphone ; écran de chargement avec indicateur.
+- Aucun changement de données, de calcul, de synchronisation ni de sauvegarde.
