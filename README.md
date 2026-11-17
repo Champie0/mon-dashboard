@@ -182,3 +182,7 @@ Verre plus profond (flou et saturation renforcés, reflets de bord), aurore lent
 ## Échelle « XL » (v1.11)
 
 Interface agrandie : titres géants (accueil, pages de tâche, minuteur de concentration), cartes plus amples, boutons et champs de 46–50 px, chiffres XXL dans les indicateurs, barre latérale élargie, éditeur de notes plus aéré. Le bloc CSS « ÉCHELLE XL » est le dernier du fichier : le retirer ramène la taille précédente.
+
+## Refonte « Liquid Glass 2026 » (v2.0)
+
+Nouvelle composition : **dock de navigation flottant** en verre (centré en haut, plus de barre latérale), **titre de page monumental**, accueil en **grille bento** asymétrique, lignes de liste en pastilles de verre, boutons agrandis (54–58 px) avec **icônes vectorielles** et états survol / actif / focus / désactivé. La matière est un verre épais éclairé (lumière clé, rebond coloré, épaisseur de bord) sur un fond à deux teintes. Sur téléphone, la navigation reste une barre d'onglets flottante en bas. Toute la logique (données, synchronisation, authentification, IA) est inchangée ; le nouveau style est le dernier bloc CSS du fichier.
