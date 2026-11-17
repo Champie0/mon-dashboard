@@ -504,7 +504,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.4.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.4.1', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -1848,7 +1848,7 @@ const aiCfg = () => {
 const aiCleanMsg = m => ({ role: m.role, text: str(m.text, 12000), raw: str(m.raw, 20000), plan: isObj(m.plan) ? m.plan : null, model: str(m.model, 100) });
 const aiValidMsg = m => isObj(m) && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string';
 function aiLoadConvs() {
-  let convs = arr(ls.get('aiconvs', [])).filter(isObj).map(c => ({ id: str(c.id, 40) || uid(), title: str(c.title, 80), updated: num(c.updated), msgs: arr(c.msgs).filter(aiValidMsg).map(aiCleanMsg).slice(-40) })).filter(c => c.msgs.length);
+  let convs = arr(ls.get('aiconvs', [])).filter(isObj).map(c => ({ id: str(c.id, 40) || uid(), title: str(c.title, 80), project: str(c.project, 60), updated: num(c.updated), msgs: arr(c.msgs).filter(aiValidMsg).map(aiCleanMsg).slice(-40) })).filter(c => c.msgs.length);
   if (!convs.length) {   // ancienne version : une seule conversation
     const old = arr(ls.get('aichat', [])).filter(aiValidMsg).map(aiCleanMsg).slice(-40);
     if (old.length) convs = [{ id: uid(), title: '', updated: Date.now(), msgs: old }];
@@ -1865,6 +1865,8 @@ const AI = {
   },
   get msgs() { return this.conv.msgs; }
 };
+/** Projet auquel s'appliquent les plans de cette conversation : un plan modifié remplace le précédent au lieu de s'y ajouter. */
+const aiProject = (c, p) => (c.project || (c.msgs.filter(m => m.plan && m.plan.applied).map(m => m.plan.title).shift()) || (p && p.title) || '').slice(0, 60);
 const aiTitle = c => { const pl = c.msgs.map(m => m.plan).filter(Boolean).pop(); const u = c.msgs.find(m => m.role === 'user'); return pl ? pl.title : u ? u.text.replace(/\s+/g, ' ').slice(0, 60) : 'Nouvelle conversation'; };
 function aiSave() {
   const c = AI.conv; c.updated = Date.now(); c.title = aiTitle(c);
@@ -1882,7 +1884,7 @@ function aiSystem() {
   const c = aiCfg(), t0 = today(), wd = d => parseD(d).toLocaleDateString('fr-FR', { weekday: 'long' });
   let ctx = '';
   if (c.ctx) {
-    const open = S.tasks.items.filter(t => !t.done).sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 15).map(t => `- ${t.title}${t.due ? ' (' + t.due + ')' : ''}`).join('\n') || '(aucune)';
+    const proj = aiProject(AI.conv, null), open = S.tasks.items.filter(t => !t.done && (!proj || t.project !== proj)).sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 15).map(t => `- ${t.title}${t.due ? ' (' + t.due + ')' : ''}`).join('\n') || '(aucune)';
     const hab = S.habits.items.slice(0, 10).map(h => h.name).join(', ') || '(aucune)';
     ctx = `\n\nContexte de l’utilisateur, pour éviter les doublons et les conflits de dates :\nTâches en cours :\n${open}\nHabitudes : ${hab}`;
   }
@@ -1898,7 +1900,7 @@ function aiSystem() {
     '{"title":"…","goal":{"title":"…","desc":"…","due":"AAAA-MM-JJ","steps":["étape 1","étape 2"]},"tasks":[{"title":"…","due":"AAAA-MM-JJ","prio":"haute|moyenne|basse","note":"…"}],"habits":[{"name":"…","icon":"📖","days":[1,3,5]}],"reminders":[{"title":"…","at":"AAAA-MM-JJTHH:MM","repeat":"none|daily|weekly"}]}',
     '```',
     'Détails : « days » = jours de la semaine (0 = dimanche … 6 = samedi), vide ou absent = tous les jours. Toutes les dates sont absolues et à partir d’aujourd’hui. Tous les champs sont optionnels sauf « title ». L’objectif (goal) et ses étapes servent de fil conducteur ; les tâches sont les actions datées ; les habitudes sont les pratiques récurrentes ; les rappels sont des alertes ponctuelles.',
-    '4. Si l’utilisateur demande une modification, renvoie le plan complet mis à jour.',
+    '4. Si l’utilisateur demande une modification, renvoie le plan COMPLET mis à jour, avec le même titre : il remplace entièrement le plan précédent de la conversation (n’indique pas « idem » et ne renvoie pas seulement les changements).',
     '5. N’écris jamais de JSON en dehors du bloc plan.'
   ].join('\n') + ctx;
 }
@@ -1985,6 +1987,7 @@ function planHTML(p, i) {
   if (p.tasks.length) h += `<h3>Tâches (${p.tasks.length})</h3><div class="plan-list">${p.tasks.map((t, k) => row('t', k, t.on, t.title, [t.due && fmtShort(t.due), t.prio !== 'moyenne' && 'priorité ' + t.prio, t.note].filter(Boolean).join(' · '))).join('')}</div>`;
   if (p.habits.length) h += `<h3>Habitudes</h3>${p.habits.map((x, k) => row('h', k, x.on, x.icon + ' ' + x.name, x.days.length ? x.days.map(d => WD[d]).join(' ') : 'tous les jours')).join('')}`;
   if (p.reminders.length) h += `<h3>Rappels</h3>${p.reminders.map((x, k) => row('r', k, x.on, x.title, fmtAt(x.at) + (x.repeat === 'daily' ? ' · chaque jour' : x.repeat === 'weekly' ? ' · chaque semaine' : ''))).join('')}`;
+  if (!p.applied) { const proj = aiProject(AI.conv, p), old = S.tasks.items.filter(t => t.project === proj && !t.done).length; if (old) h += `<p class="small muted" style="margin-top:10px">Remplace les ${plural(old, 'tâche non terminée', 'tâches non terminées')} du projet « ${esc(proj)} » (les tâches terminées sont conservées).</p>`; }
   if (!p.applied) h += `<div class="row end" style="margin-top:12px"><button class="btn primary" data-a="aiApply" data-id="${i}"${n ? '' : ' disabled'}>Ajouter au dashboard (${n})</button></div>`;
   return h + '</div>';
 }
@@ -2069,16 +2072,30 @@ CH.aiPick = (d, t) => {
 };
 ACT.aiApply = d => {
   const m = AI.msgs[+d.id], p = m && m.plan; if (!p || p.applied) return;
-  const mods = ['tasks', 'goals', 'habits', 'reminders'], snap = mods.map(k => [k, JSON.stringify(S[k])]), tag = p.title.slice(0, 60), t0 = today();
-  let n = 0;
-  for (const t of p.tasks.filter(x => x.on)) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, tags: [], note: t.note, done: false, doneAt: '', created: t0 }); n++; }
-  if (p.goal && p.goal.on) { S.goals.items.push({ id: uid(), title: p.goal.title, desc: p.goal.desc, due: p.goal.due, cat: tag.slice(0, 40), status: 'active', steps: p.goal.steps.map(s => ({ id: uid(), text: s, done: false })) }); n++; }
-  p.habits.filter(x => x.on).forEach((h, i) => { S.habits.items.push({ id: uid(), name: h.name, icon: h.icon, color: HABIT_COLORS[(S.habits.items.length + i) % HABIT_COLORS.length][0], freq: h.days.length ? 'days' : 'daily', days: h.days, target: 0, unit: '', step: 1, created: t0, log: {} }); n++; });
-  for (const r of p.reminders.filter(x => x.on)) { S.reminders.items.push({ id: uid(), title: r.title, at: r.at, repeat: r.repeat, fired: false, pending: '' }); n++; }
-  if (!n) return;
+  const conv = AI.conv, mods = ['tasks', 'goals', 'habits', 'reminders'], snap = mods.map(k => [k, JSON.stringify(S[k])]), tag = aiProject(conv, p), t0 = today();
+  const norm = x => String(x).toLowerCase().replace(/\s+/g, ' ').trim();
+  let n = 0, replaced = 0;
+  /* Tâches : les tâches non terminées du projet sont remplacées ; celles déjà terminées sont gardées (et non recréées). */
+  const doneTitles = new Set(S.tasks.items.filter(t => t.project === tag && t.done).map(t => norm(t.title)));
+  replaced = S.tasks.items.filter(t => t.project === tag && !t.done).length;
+  S.tasks.items = S.tasks.items.filter(t => !(t.project === tag && !t.done));
+  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, tags: [], note: t.note, done: false, doneAt: '', created: t0 }); n++; }
+  /* Objectif : mis à jour s'il existe déjà (les étapes déjà cochées restent cochées). */
+  if (p.goal && p.goal.on) {
+    const g = S.goals.items.find(x => x.cat === tag.slice(0, 40) || norm(x.title) === norm(p.goal.title));
+    if (g) {
+      const was = new Map(g.steps.map(x => [norm(x.text), x.done]));
+      Object.assign(g, { title: p.goal.title, desc: p.goal.desc, due: p.goal.due, steps: p.goal.steps.map(x => ({ id: uid(), text: x, done: !!was.get(norm(x)) })) }); replaced++;
+    } else { S.goals.items.push({ id: uid(), title: p.goal.title, desc: p.goal.desc, due: p.goal.due, cat: tag.slice(0, 40), status: 'active', steps: p.goal.steps.map(x => ({ id: uid(), text: x, done: false })) }); n++; }
+  }
+  /* Habitudes et rappels : jamais en double. */
+  p.habits.filter(x => x.on && !S.habits.items.some(h => norm(h.name) === norm(x.name))).forEach((h, i) => { S.habits.items.push({ id: uid(), name: h.name, icon: h.icon, color: HABIT_COLORS[(S.habits.items.length + i) % HABIT_COLORS.length][0], freq: h.days.length ? 'days' : 'daily', days: h.days, target: 0, unit: '', step: 1, created: t0, log: {} }); n++; });
+  for (const r of p.reminders.filter(x => x.on && !S.reminders.items.some(y => norm(y.title) === norm(x.title) && y.at === x.at))) { S.reminders.items.push({ id: uid(), title: r.title, at: r.at, repeat: r.repeat, fired: false, pending: '' }); n++; }
+  if (!n && !replaced) return;
+  conv.project = tag;
   for (const k of mods) commit(k, { silent: true });
   p.applied = true; aiSave(); render(); safe(tick);
-  toast(plural(n, 'élément ajouté', 'éléments ajoutés') + '.', { undo: () => { for (const [k, s] of snap) { S[k] = JSON.parse(s); commit(k, { silent: true }); } p.applied = false; aiSave(); render(); } });
+  toast(plural(n, 'élément ajouté', 'éléments ajoutés') + (replaced ? ` · ${plural(replaced, 'ancien remplacé', 'anciens remplacés')}` : '') + '.', { undo: () => { for (const [k, s] of snap) { S[k] = JSON.parse(s); commit(k, { silent: true }); } p.applied = false; aiSave(); render(); } });
 };
 ACT.aiConf = () => {
   const c = aiCfg();
