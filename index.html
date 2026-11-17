@@ -586,7 +586,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.9.1', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.9.2', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -1325,7 +1325,7 @@ function taskRow(t, t0, compact) {
     <button class="chk" role="checkbox" aria-checked="${t.done}" data-a="taskToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} : ${esc(t.title)}">✓</button>
     <div class="grow"><div class="it-title"><button class="it-open" data-a="taskOpen" data-id="${A(t.id)}" title="Voir la fiche">${esc(t.title)}</button></div><div class="meta"><span class="chip ${t.prio}">Priorité ${t.prio}</span>${(t.steps || []).length ? `<span class="chip">${t.steps.filter(x => x.done).length}/${t.steps.length} étapes</span>` : ''}
       ${t.due ? (late ? `<span class="chip late">En retard · ${esc(fmtShort(t.due))}</span>` : `<span>Échéance : ${esc(relDay(t.due))}</span>`) : ''}
-      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${(() => { const i = stepInfo(t); return i ? `<span class="chip step-chip" title="Objectif : ${A(i.g.title)}">🎯 ${i.s ? `Étape ${i.i + 1} · ${esc(i.s.text)}` : esc(i.g.title)}</span>` : ''; })()}${t.group && !compact ? (() => { const g = (S.tasks.groups || []).find(x => x.id === t.group); return g ? `<span class="chip">▸ ${esc(g.name)}</span>` : ''; })() : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${!compact && docOf(t) ? (() => { const x = docText(docOf(t)); return `<span>Note : ${esc(x.slice(0, 70))}${x.length > 70 ? '…' : ''}</span>`; })() : ''}</div></div>
+      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${(() => { const i = stepInfo(t); return i ? `<span class="chip step-chip" title="Objectif : ${A(i.g.title)}">🎯 ${i.s ? `Étape ${i.i + 1} · ${esc(stepLabel(i.s.text))}` : esc(i.g.title)}</span>` : ''; })()}${t.group && !compact ? (() => { const g = (S.tasks.groups || []).find(x => x.id === t.group); return g ? `<span class="chip">▸ ${esc(g.name)}</span>` : ''; })() : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${!compact && docOf(t) ? (() => { const x = docText(docOf(t)); return `<span>Note : ${esc(x.slice(0, 70))}${x.length > 70 ? '…' : ''}</span>`; })() : ''}</div></div>
     ${compact ? '' : `${t.done ? '' : `<button class="ic" data-a="focusOpen" data-id="${A(t.id)}" aria-label="Se concentrer sur ${esc(t.title)}" title="Se concentrer">◎</button>`}<button class="ic" data-a="taskEdit" data-id="${A(t.id)}" aria-label="Modifier ${esc(t.title)}" title="Modifier">✎</button><button class="ic" data-a="taskDel" data-id="${A(t.id)}" aria-label="Supprimer ${esc(t.title)}" title="Supprimer">✕</button>`}</li>`;
 }
 /** Barre du parcours : étapes des objectifs, avec filtre au clic. Repliable. */
@@ -1336,7 +1336,7 @@ function pathHTML() {
   return `<section class="hud path${TF.path ? '' : ' closed'}"><div class="row"><button class="proj-toggle" data-a="pathToggle" aria-expanded="${TF.path}"><span class="chev" aria-hidden="true">▾</span>Parcours des objectifs</button><span class="muted small grow">${act ? 'Filtre actif sur la liste ci-dessous' : 'Cliquez une étape pour voir ses tâches'}</span>${act ? '<button class="btn sm ghost" data-a="pathClear">Tout afficher</button>' : ''}</div>
     ${TF.path ? gs.map(g => { const cur = g.steps.find(x => !x.done); return `<div class="path-goal"><button class="path-t${act === g.id + '|' ? ' on' : ''}" data-a="pathPick" data-k="${A(g.id + '|')}" aria-pressed="${act === g.id + '|'}" title="Toutes les tâches de cet objectif">🎯 ${esc(g.title)}</button>
       <ol class="path-steps">${g.steps.map((x, i) => { const ts = stepTasks(g.id, x.id), dn = ts.filter(t => t.done).length, key = g.id + '|' + x.id;
-        return `<li><button class="path-s${x.done ? ' done' : ''}${x === cur ? ' cur' : ''}${act === key ? ' on' : ''}" data-a="pathPick" data-k="${A(key)}" aria-pressed="${act === key}"><b>${x.done ? '✓' : i + 1}</b><span>Étape ${i + 1}<small>${esc(x.text)}</small></span><em>${ts.length ? dn + '/' + ts.length : '–'}</em></button></li>`; }).join('')}</ol></div>`; }).join('') : ''}</section>`;
+        return `<li><button class="path-s${x.done ? ' done' : ''}${x === cur ? ' cur' : ''}${act === key ? ' on' : ''}" data-a="pathPick" data-k="${A(key)}" aria-pressed="${act === key}"><b>${x.done ? '✓' : i + 1}</b><span>Étape ${i + 1}<small title="${A(x.text)}">${esc(stepLabel(x.text))}</small></span><em>${ts.length ? dn + '/' + ts.length : '–'}</em></button></li>`; }).join('')}</ol></div>`; }).join('') : ''}</section>`;
 }
 ACT.pathToggle = () => { TF.path = !TF.path; ls.set('tfpath', TF.path); render(); };
 ACT.pathPick = d => { TF.gstep = TF.gstep === d.k ? '' : d.k; if (TF.gstep) TF.status = 'all'; TF.limit = 150; render(); };
@@ -1411,6 +1411,8 @@ ACT.taskToggle = d => { const t = S.tasks.items.find(x => x.id === d.id); if (!t
 const groupsOf = name => (S.tasks.groups || []).filter(g => g.project === name);
 const groupTasks = g => S.tasks.items.filter(t => t.group === g.id && t.project === g.project);
 const goalOfGroup = g => g.goal ? S.goals.items.find(x => x.id === g.goal) : null;
+/** Retire un préfixe de numérotation (« Étape 0 — », « 2. ») que l'IA a pu écrire dans le texte d'une étape. */
+const stepLabel = x => { const r = String(x).replace(/^\s*(?:étape|etape|phase|step)?\s*\d+\s*(?:[—–:.)-]\s*|\s+—\s*)/i, '').trim(); return r || String(x); };
 /** Tâches reliées à une étape d'objectif. */
 const stepTasks = (gid, sid) => S.tasks.items.filter(t => t.goal === gid && t.gstep === sid);
 /** Étapes cochées/décochées selon leurs tâches, puis propose de cocher le groupe ou l'objectif quand tout est fait. */
@@ -1441,7 +1443,7 @@ function groupCheck() {
 }
 /** Choix « objectif › étape » pour relier une tâche. */
 const linkVal = t => t.goal ? t.goal + '|' + (t.gstep || '') : '';
-const linkOpts = t => [['', 'Aucun'], ...S.goals.items.filter(g => g.status !== 'done' || (t && t.goal === g.id)).flatMap(g => [[g.id + '|', g.title], ...g.steps.map((x, i) => [g.id + '|' + x.id, `${g.title} › Étape ${i + 1} : ${x.text}`])])];
+const linkOpts = t => [['', 'Aucun'], ...S.goals.items.filter(g => g.status !== 'done' || (t && t.goal === g.id)).flatMap(g => [[g.id + '|', g.title], ...g.steps.map((x, i) => [g.id + '|' + x.id, `${g.title} › Étape ${i + 1} : ${stepLabel(x.text)}`])])];
 const linkSplit = v => { const [g, st] = String(v || '').split('|'); return { goal: g || '', gstep: g ? (st || '') : '' }; };
 const stepInfo = t => { const g = t.goal && S.goals.items.find(x => x.id === t.goal); if (!g) return null; const i = t.gstep ? g.steps.findIndex(x => x.id === t.gstep) : -1; return { g, i, s: i >= 0 ? g.steps[i] : null }; };
 const goalOpts = cur => [['', 'Aucun objectif'], ...S.goals.items.filter(x => x.status !== 'done' || x.id === cur).map(x => [x.id, x.title])];
@@ -2324,7 +2326,7 @@ function aiSystem() {
     '```plan',
     '{"title":"…","goal":{"title":"…","desc":"…","due":"AAAA-MM-JJ","steps":["étape 1","étape 2"]},"tasks":[{"title":"…","due":"AAAA-MM-JJ","step":1,"prio":"haute|moyenne|basse","note":"…","steps":["sous-étape 1","sous-étape 2"]}],"habits":[{"name":"…","icon":"📖","days":[1,3,5]}],"reminders":[{"title":"…","at":"AAAA-MM-JJTHH:MM","repeat":"none|daily|weekly"}]}',
     '```',
-    'Détails : « days » = jours de la semaine (0 = dimanche … 6 = samedi), vide ou absent = tous les jours. Toutes les dates sont absolues et à partir d’aujourd’hui. Une tâche en plusieurs temps peut avoir 2 à 6 étapes courtes (« steps »). Tous les champs sont optionnels sauf « title ». « step » = numéro (à partir de 1) de l’étape de l’objectif à laquelle la tâche appartient : répartis TOUTES les tâches dans les étapes (plusieurs tâches par étape, ordre chronologique), ne mets pas tout dans l’étape 1. L’objectif (goal) et ses étapes servent de fil conducteur ; les tâches sont les actions datées ; les habitudes sont les pratiques récurrentes ; les rappels sont des alertes ponctuelles.',
+    'N’écris PAS la numérotation dans le texte des étapes (pas de « Étape 1 — ») : l’application numérote elle-même. Détails : « days » = jours de la semaine (0 = dimanche … 6 = samedi), vide ou absent = tous les jours. Toutes les dates sont absolues et à partir d’aujourd’hui. Une tâche en plusieurs temps peut avoir 2 à 6 étapes courtes (« steps »). Tous les champs sont optionnels sauf « title ». « step » = numéro (à partir de 1) de l’étape de l’objectif à laquelle la tâche appartient : répartis TOUTES les tâches dans les étapes (plusieurs tâches par étape, ordre chronologique), ne mets pas tout dans l’étape 1. L’objectif (goal) et ses étapes servent de fil conducteur ; les tâches sont les actions datées ; les habitudes sont les pratiques récurrentes ; les rappels sont des alertes ponctuelles.',
     '4. Si l’utilisateur demande une modification, renvoie le plan COMPLET mis à jour, avec le même titre : il remplace entièrement le plan précédent de la conversation (n’indique pas « idem » et ne renvoie pas seulement les changements).',
     '5. N’écris jamais de JSON en dehors du bloc plan.'
   ].join('\n') + ctx;
@@ -2384,7 +2386,7 @@ async function aiCall(msgs, system) {
 function aiPlan(o) {
   const t0 = today(), now = nowStr(), d = s => validD(s) ? s : '';
   const tasks = arr(o.tasks).filter(isObj).map(t => ({ title: str(t.title, 300).trim(), due: d(t.due) >= t0 ? d(t.due) : '', prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne', note: str(t.note, 2000), steps: lines(t.steps, 200).slice(0, 12), step: t.step, on: true })).filter(t => t.title).slice(0, 60);
-  const g = isObj(o.goal) && str(o.goal.title).trim() ? { title: str(o.goal.title, 200).trim(), desc: str(o.goal.desc, 3000), due: d(o.goal.due), steps: lines(o.goal.steps, 200).slice(0, 30), on: true } : null;
+  const g = isObj(o.goal) && str(o.goal.title).trim() ? { title: str(o.goal.title, 200).trim(), desc: str(o.goal.desc, 3000), due: d(o.goal.due), steps: lines(o.goal.steps, 200).map(stepLabel).filter(Boolean).slice(0, 30), on: true } : null;
   /* Chaque tâche est rattachée à une étape de l'objectif : numéro (1, 2…) ou texte de l'étape. */
   const nk = x => String(x).toLowerCase().replace(/\s+/g, ' ').trim();
   for (const t of tasks) {
