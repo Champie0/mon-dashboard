@@ -1802,8 +1802,7 @@ const sw = (k, on, label, help) => `<button class="sw" role="switch" aria-checke
    ===================================================================== */
 const AI_PROVIDERS = {
   gemini: { label: 'Google Gemini (offre gratuite)', model: 'gemini-2.5-flash', link: 'https://aistudio.google.com/apikey' },
-  anthropic: { label: 'Anthropic Claude', model: 'claude-sonnet-5-5', link: 'https://console.anthropic.com/settings/keys' },
-  openrouter: { label: 'OpenRouter (plusieurs modèles)', model: 'google/gemini-2.5-flash', link: 'https://openrouter.ai/keys' }
+  openrouter: { label: 'OpenRouter (modèles « :free » gratuits)', model: 'meta-llama/llama-3.3-70b-instruct:free', link: 'https://openrouter.ai/keys' }
 };
 const aiCfg = () => {
   const c = ls.get('ai', {}) || {};
@@ -1855,10 +1854,6 @@ async function aiCall(msgs, system) {
     url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
     headers['x-goog-api-key'] = c.key;
     body = { systemInstruction: { parts: [{ text: system }] }, contents: msgs.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] })), generationConfig: { temperature: .7, maxOutputTokens: 8192 } };
-  } else if (c.provider === 'anthropic') {
-    url = 'https://api.anthropic.com/v1/messages';
-    headers['x-api-key'] = c.key; headers['anthropic-version'] = '2023-06-01'; headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    body = { model, max_tokens: 8192, system, messages: msgs.map(m => ({ role: m.role, content: m.text })) };
   } else {
     url = 'https://openrouter.ai/api/v1/chat/completions';
     headers.Authorization = 'Bearer ' + c.key;
@@ -1873,7 +1868,6 @@ async function aiCall(msgs, system) {
         : r.status === 429 ? 'Quota atteint chez le fournisseur : réessayez dans un moment.' : (m ? str(m, 240) : 'Erreur ' + r.status + ' du fournisseur.'));
     }
     const out = c.provider === 'gemini' ? arr(j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts).map(p => str(p.text, 40000)).join('')
-      : c.provider === 'anthropic' ? arr(j.content).map(p => str(p.text, 40000)).join('')
         : str(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content, 40000);
     if (!out.trim()) throw new Error('Réponse vide du modèle. Reformulez ou réessayez.');
     return out;
