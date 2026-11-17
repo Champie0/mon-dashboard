@@ -586,7 +586,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.9.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.9.1', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -2322,9 +2322,9 @@ function aiSystem() {
     '2. Un plan est réaliste : charge raisonnable, jours de repos, progression par étapes, un point d’étape ou une révision régulière. Pas plus de 25 tâches : regroupe plutôt que de détailler chaque jour.',
     '3. Quand le plan est prêt, écris 2 à 4 phrases de présentation, puis UN SEUL bloc de code balisé « plan » contenant du JSON valide et rien d’autre :',
     '```plan',
-    '{"title":"…","goal":{"title":"…","desc":"…","due":"AAAA-MM-JJ","steps":["étape 1","étape 2"]},"tasks":[{"title":"…","due":"AAAA-MM-JJ","prio":"haute|moyenne|basse","note":"…","steps":["sous-étape 1","sous-étape 2"]}],"habits":[{"name":"…","icon":"📖","days":[1,3,5]}],"reminders":[{"title":"…","at":"AAAA-MM-JJTHH:MM","repeat":"none|daily|weekly"}]}',
+    '{"title":"…","goal":{"title":"…","desc":"…","due":"AAAA-MM-JJ","steps":["étape 1","étape 2"]},"tasks":[{"title":"…","due":"AAAA-MM-JJ","step":1,"prio":"haute|moyenne|basse","note":"…","steps":["sous-étape 1","sous-étape 2"]}],"habits":[{"name":"…","icon":"📖","days":[1,3,5]}],"reminders":[{"title":"…","at":"AAAA-MM-JJTHH:MM","repeat":"none|daily|weekly"}]}',
     '```',
-    'Détails : « days » = jours de la semaine (0 = dimanche … 6 = samedi), vide ou absent = tous les jours. Toutes les dates sont absolues et à partir d’aujourd’hui. Une tâche en plusieurs temps peut avoir 2 à 6 étapes courtes (« steps »). Tous les champs sont optionnels sauf « title ». L’objectif (goal) et ses étapes servent de fil conducteur ; les tâches sont les actions datées ; les habitudes sont les pratiques récurrentes ; les rappels sont des alertes ponctuelles.',
+    'Détails : « days » = jours de la semaine (0 = dimanche … 6 = samedi), vide ou absent = tous les jours. Toutes les dates sont absolues et à partir d’aujourd’hui. Une tâche en plusieurs temps peut avoir 2 à 6 étapes courtes (« steps »). Tous les champs sont optionnels sauf « title ». « step » = numéro (à partir de 1) de l’étape de l’objectif à laquelle la tâche appartient : répartis TOUTES les tâches dans les étapes (plusieurs tâches par étape, ordre chronologique), ne mets pas tout dans l’étape 1. L’objectif (goal) et ses étapes servent de fil conducteur ; les tâches sont les actions datées ; les habitudes sont les pratiques récurrentes ; les rappels sont des alertes ponctuelles.',
     '4. Si l’utilisateur demande une modification, renvoie le plan COMPLET mis à jour, avec le même titre : il remplace entièrement le plan précédent de la conversation (n’indique pas « idem » et ne renvoie pas seulement les changements).',
     '5. N’écris jamais de JSON en dehors du bloc plan.'
   ].join('\n') + ctx;
@@ -2383,8 +2383,15 @@ async function aiCall(msgs, system) {
 /** Valide et nettoie un plan renvoyé par le modèle (jamais de confiance aveugle). */
 function aiPlan(o) {
   const t0 = today(), now = nowStr(), d = s => validD(s) ? s : '';
-  const tasks = arr(o.tasks).filter(isObj).map(t => ({ title: str(t.title, 300).trim(), due: d(t.due) >= t0 ? d(t.due) : '', prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne', note: str(t.note, 2000), steps: lines(t.steps, 200).slice(0, 12), on: true })).filter(t => t.title).slice(0, 60);
+  const tasks = arr(o.tasks).filter(isObj).map(t => ({ title: str(t.title, 300).trim(), due: d(t.due) >= t0 ? d(t.due) : '', prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne', note: str(t.note, 2000), steps: lines(t.steps, 200).slice(0, 12), step: t.step, on: true })).filter(t => t.title).slice(0, 60);
   const g = isObj(o.goal) && str(o.goal.title).trim() ? { title: str(o.goal.title, 200).trim(), desc: str(o.goal.desc, 3000), due: d(o.goal.due), steps: lines(o.goal.steps, 200).slice(0, 30), on: true } : null;
+  /* Chaque tâche est rattachée à une étape de l'objectif : numéro (1, 2…) ou texte de l'étape. */
+  const nk = x => String(x).toLowerCase().replace(/\s+/g, ' ').trim();
+  for (const t of tasks) {
+    const raw = t.step; let k = 0;
+    if (g) { const n = Math.round(Number(raw)); k = Number.isFinite(n) && n >= 1 && n <= g.steps.length ? n : (typeof raw === 'string' && raw.trim() ? g.steps.findIndex(x => nk(x) === nk(raw)) + 1 : 0); }
+    t.step = k;
+  }
   const habits = arr(o.habits).filter(isObj).map(h => ({ name: str(h.name, 80).trim(), icon: str(h.icon, 8) || '🌿', days: [...new Set(arr(h.days).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))], on: true })).filter(h => h.name).slice(0, 8);
   const okAt = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) && validD(s.slice(0, 10)) && +s.slice(11, 13) < 24 && +s.slice(14) < 60;
   const reminders = arr(o.reminders).filter(isObj).map(r => ({ title: str(r.title, 200).trim(), at: str(r.at, 16), repeat: ['daily', 'weekly'].includes(r.repeat) ? r.repeat : 'none', on: true }))
@@ -2409,7 +2416,7 @@ function planHTML(p, i) {
   const n = p.tasks.filter(x => x.on).length + p.habits.filter(x => x.on).length + p.reminders.filter(x => x.on).length + (p.goal && p.goal.on ? 1 : 0);
   let h = `<div class="plan"><div class="row"><b class="grow">${esc(p.title)}</b>${p.applied ? '<span class="chip ok">Ajouté au dashboard</span>' : ''}</div>`;
   if (p.goal) h += `<h3>Objectif</h3>${row('g', 0, p.goal.on, p.goal.title, [p.goal.due && 'échéance ' + fmtShort(p.goal.due), arr(p.goal.steps).length && plural(p.goal.steps.length, 'étape', 'étapes')].filter(Boolean).join(' · '))}`;
-  if (p.tasks.length) h += `<h3>Tâches (${p.tasks.length})</h3><div class="plan-list">${p.tasks.map((t, k) => row('t', k, t.on, t.title, [t.due && fmtShort(t.due), t.prio !== 'moyenne' && 'priorité ' + t.prio, arr(t.steps).length && plural(t.steps.length, 'étape', 'étapes'), t.note].filter(Boolean).join(' · '))).join('')}</div>`;
+  if (p.tasks.length) h += `<h3>Tâches (${p.tasks.length})</h3><div class="plan-list">${p.tasks.map((t, k) => row('t', k, t.on, t.title, [t.due && fmtShort(t.due), t.prio !== 'moyenne' && 'priorité ' + t.prio, t.step && 'étape ' + t.step, arr(t.steps).length && plural(t.steps.length, 'sous-étape', 'sous-étapes'), t.note].filter(Boolean).join(' · '))).join('')}</div>`;
   if (p.habits.length) h += `<h3>Habitudes</h3>${p.habits.map((x, k) => row('h', k, x.on, x.icon + ' ' + x.name, x.days.length ? x.days.map(d => WD[d]).join(' ') : 'tous les jours')).join('')}`;
   if (p.reminders.length) h += `<h3>Rappels</h3>${p.reminders.map((x, k) => row('r', k, x.on, x.title, fmtAt(x.at) + (x.repeat === 'daily' ? ' · chaque jour' : x.repeat === 'weekly' ? ' · chaque semaine' : ''))).join('')}`;
   if (!p.applied) { const proj = aiProject(AI.conv, p), old = S.tasks.items.filter(t => t.project === proj && !t.done).length; if (old) h += `<p class="small muted" style="margin-top:10px">Remplace les ${plural(old, 'tâche non terminée', 'tâches non terminées')} du projet « ${esc(proj)} » (les tâches terminées sont conservées).</p>`; }
@@ -2499,20 +2506,21 @@ ACT.aiApply = d => {
   const m = AI.msgs[+d.id], p = m && m.plan; if (!p || p.applied) return;
   const conv = AI.conv, mods = ['tasks', 'goals', 'habits', 'reminders'], snap = mods.map(k => [k, JSON.stringify(S[k])]), tag = aiProject(conv, p), t0 = today();
   const norm = x => String(x).toLowerCase().replace(/\s+/g, ' ').trim();
-  let n = 0, replaced = 0;
+  let n = 0, replaced = 0, goalRef = null;
   /* Tâches : les tâches non terminées du projet sont remplacées ; celles déjà terminées sont gardées (et non recréées). */
   const doneTitles = new Set(S.tasks.items.filter(t => t.project === tag && t.done).map(t => norm(t.title)));
   replaced = S.tasks.items.filter(t => t.project === tag && !t.done).length;
   S.tasks.items = S.tasks.items.filter(t => !(t.project === tag && !t.done));
-  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, steps: arr(t.steps).map(x => ({ id: uid(), text: str(x, 200), done: false })), tags: [], note: '', doc: noteToDoc(t.note), done: false, doneAt: '', created: t0 }); n++; }
+  /* (les tâches sont ajoutées après l'objectif, pour pouvoir les relier à ses étapes) */
   /* Objectif : mis à jour s'il existe déjà (les étapes déjà cochées restent cochées). */
   if (p.goal && p.goal.on) {
     const g = S.goals.items.find(x => x.cat === tag.slice(0, 40) || norm(x.title) === norm(p.goal.title));
     if (g) {
-      const was = new Map(g.steps.map(x => [norm(x.text), x.done]));
-      Object.assign(g, { title: p.goal.title, desc: p.goal.desc, due: p.goal.due, steps: p.goal.steps.map(x => ({ id: uid(), text: x, done: !!was.get(norm(x)) })) }); replaced++;
-    } else { S.goals.items.push({ id: uid(), title: p.goal.title, desc: p.goal.desc, due: p.goal.due, cat: tag.slice(0, 40), status: 'active', steps: p.goal.steps.map(x => ({ id: uid(), text: x, done: false })) }); n++; }
+      const was = new Map(g.steps.map(x => [norm(x.text), x]));
+      Object.assign(g, { title: p.goal.title, desc: p.goal.desc, due: p.goal.due, steps: p.goal.steps.map(x => { const o = was.get(norm(x)); return { id: o ? o.id : uid(), text: x, done: !!(o && o.done), auto: !!(o && o.auto) }; }) }); replaced++; goalRef = g;
+    } else { goalRef = { id: uid(), title: p.goal.title, desc: p.goal.desc, due: p.goal.due, cat: tag.slice(0, 40), status: 'active', steps: p.goal.steps.map(x => ({ id: uid(), text: x, done: false })) }; S.goals.items.push(goalRef); n++; }
   }
+  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, goal: goalRef ? goalRef.id : '', gstep: goalRef && t.step ? (goalRef.steps[t.step - 1] || {}).id || '' : '', steps: arr(t.steps).map(x => ({ id: uid(), text: str(x, 200), done: false })), tags: [], note: '', doc: noteToDoc(t.note), done: false, doneAt: '', created: t0 }); n++; }
   /* Habitudes et rappels : jamais en double. */
   p.habits.filter(x => x.on && !S.habits.items.some(h => norm(h.name) === norm(x.name))).forEach((h, i) => { S.habits.items.push({ id: uid(), name: h.name, icon: h.icon, color: HABIT_COLORS[(S.habits.items.length + i) % HABIT_COLORS.length][0], freq: h.days.length ? 'days' : 'daily', days: h.days, target: 0, unit: '', step: 1, created: t0, log: {} }); n++; });
   for (const r of p.reminders.filter(x => x.on && !S.reminders.items.some(y => norm(y.title) === norm(x.title) && y.at === x.at))) { S.reminders.items.push({ id: uid(), title: r.title, at: r.at, repeat: r.repeat, fired: false, pending: '' }); n++; }
