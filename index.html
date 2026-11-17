@@ -378,7 +378,47 @@ kbd{display:inline-block;min-width:1.7em;text-align:center;padding:0 6px;border:
 .it-open{background:none;border:0;padding:0;margin:0;text-align:left;color:inherit;font:inherit;cursor:pointer;overflow-wrap:anywhere;border-radius:6px;transition:color var(--t-fast)}
 .it-open:hover{color:var(--accent)}
 .td-h{font:600 12px var(--font);letter-spacing:.05em;text-transform:uppercase;color:var(--text-2);margin:20px 0 8px}
-dialog.focus{width:min(620px,94vw)}
+/* ---------- Pages plein écran (tâche, projet, concentration) ---------- */
+.page{max-width:1180px;margin:0 auto}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--text-2);margin-bottom:14px}
+.crumbs a{color:var(--text-2);text-decoration:none;padding:3px 8px;margin:0 -4px;border-radius:8px}
+.crumbs a:hover{background:var(--hover);color:var(--text)}
+.crumbs [aria-current]{color:var(--text);overflow-wrap:anywhere}
+.page-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.page-title,.tp-title{font-family:var(--font-d);font-weight:650;font-size:clamp(26px,4vw,38px);letter-spacing:-.025em;line-height:1.15;overflow-wrap:anywhere}
+.tp-title{flex:1;min-width:0;width:100%;background:transparent;border:1px solid transparent;border-radius:12px;padding:4px 10px;margin-left:-10px;color:var(--text)}
+.tp-title:hover{border-color:var(--line)}
+.tp-title:focus{border-color:var(--accent);outline:0;background:var(--g-1)}
+.tp-title.done{text-decoration:line-through;color:var(--text-2)}
+.chk.big{width:34px;height:34px;flex:none}
+.page-props{display:flex;flex-wrap:wrap;gap:12px 22px;margin-bottom:22px;padding:14px 16px;border-radius:var(--r-lg);background:var(--g-1);border:1px solid var(--line)}
+.prop{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2)}
+.prop select,.prop input{width:auto;min-width:150px}
+.late-t{color:#ff9a9a}
+.page-cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:22px;align-items:start}
+.page-side{position:sticky;top:90px}
+@media (max-width:900px){.page-cols{grid-template-columns:1fr}.page-side{position:static}}
+.ed-wrap{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--g-1);overflow:hidden}
+.ed-wrap:focus-within{border-color:var(--accent)}
+.ed-bar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:6px 8px;border-bottom:1px solid var(--line);background:var(--g-2)}
+.ed-bar i{width:1px;height:18px;background:var(--line);margin:0 4px}
+.ed-b{min-width:32px;height:30px;border-radius:8px;border:0;background:transparent;color:var(--text);font:500 14px var(--font);cursor:pointer;padding:0 8px}
+.ed-b:hover{background:var(--hover)}
+.ed-st{padding-right:4px}
+.ed{min-height:46vh;padding:20px 24px;outline:0;font-size:15.5px;line-height:1.65;overflow-wrap:anywhere}
+.ed:empty::before{content:attr(data-ph);color:var(--text-2);opacity:.7;pointer-events:none}
+.ed h2{font:650 24px var(--font-d);letter-spacing:-.02em;margin:18px 0 6px}
+.ed h3{font:600 18px var(--font-d);margin:14px 0 4px}
+.ed p{margin:0 0 8px}
+.ed ul,.ed ol{margin:4px 0 10px;padding-left:26px}
+.ed blockquote{margin:10px 0;padding:4px 14px;border-left:3px solid var(--accent);color:var(--text-2)}
+.ed hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.ed code{background:var(--g-2);padding:1px 6px;border-radius:6px}
+.ed ul.ck{list-style:none;padding-left:0}
+.ed ul.ck>li{position:relative;padding-left:32px;min-height:24px}
+.ed ul.ck>li::before{content:'';position:absolute;left:4px;top:4px;width:17px;height:17px;border-radius:6px;border:1.5px solid var(--text-2);cursor:pointer}
+.ed ul.ck>li[data-d="1"]{color:var(--text-2);text-decoration:line-through}
+.ed ul.ck>li[data-d="1"]::before{background:var(--accent);border-color:var(--accent);content:'✓';color:#10121a;font-size:12px;font-weight:700;text-align:center;line-height:16px}
 .focus-in{text-align:center}
 .focus-in .list{text-align:left;margin-top:6px}
 .focus-t{font-family:var(--font-d);font-weight:600;font-size:clamp(22px,4.5vw,30px);letter-spacing:-.02em;line-height:1.2;margin:6px 0 4px;overflow-wrap:anywhere}
@@ -525,7 +565,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.6.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.7.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -603,7 +643,7 @@ const HABIT_COLORS = [['#6E7B2F', 'Olive'], ['#B4502C', 'Terracotta'], ['#C8892B
 const HABIT_ICONS = ['💧', '📖', '🏃', '🧘', '🛌', '🥗', '✍️', '🎸', '🧹', '💊', '🌿', '☀️', '🚶', '🎨', '💻', '📵'];
 const DEFAULTS = {
   home: () => ({ v: 1, quotes: ['Un pas après l’autre, mais un pas chaque jour.', 'Ce qui est fait aujourd’hui n’est plus à faire demain.', 'La régularité bat l’intensité.', 'Commence par le plus important, pas par le plus facile.', 'Mieux vaut fait que parfait.', 'Chaque jour compte, surtout celui-ci.'], top: [], firstUse: today(), lastExport: null }),
-  tasks: () => ({ v: 1, items: [], projects: [] }),
+  tasks: () => ({ v: 1, items: [], projects: [], pnotes: {} }),
   habits: () => ({ v: 1, items: [] }),
   goals: () => ({ v: 1, items: [] }),
   finance: () => ({
@@ -616,6 +656,34 @@ const DEFAULTS = {
   reminders: () => ({ v: 1, items: [] })
 };
 const lines = (a, max) => arr(a).map(x => str(x, max).trim()).filter(Boolean);
+/* ---------- Notes riches : nettoyage par liste blanche ---------- */
+const DOC_TAGS = { H2: 'h2', H3: 'h3', P: 'p', DIV: 'p', BR: 'br', STRONG: 'strong', B: 'strong', EM: 'em', I: 'em', U: 'u', S: 's', UL: 'ul', OL: 'ol', LI: 'li', BLOCKQUOTE: 'blockquote', HR: 'hr', CODE: 'code' };
+function cleanDoc(html) {
+  if (!html) return '';
+  let doc; try { doc = new DOMParser().parseFromString('<body>' + html, 'text/html'); } catch (e) { return ''; }
+  const walk = n => {
+    let out = '';
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3) { out += esc(c.nodeValue); continue; }
+      if (c.nodeType !== 1) continue;
+      const tag = c.tagName;
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEMPLATE') continue;
+      let t = DOC_TAGS[tag];
+      if ((t === 'p') && c.querySelector('ul,ol,h2,h3,p,blockquote,hr')) t = null;
+      if (!t) { out += walk(c); continue; }
+      if (t === 'br' || t === 'hr') { out += `<${t}>`; continue; }
+      let attr = '';
+      if (t === 'ul' && c.classList.contains('ck')) attr = ' class="ck"';
+      if (t === 'li' && c.getAttribute('data-d') === '1') attr = ' data-d="1"';
+      out += `<${t}${attr}>${walk(c)}</${t}>`;
+    }
+    return out;
+  };
+  return walk(doc.body).replace(/<p><\/p>/g, '').trim();
+}
+const noteToDoc = n => n ? n.split(/\n{2,}/).map(x => x.trim()).filter(Boolean).map(x => `<p>${esc(x).replace(/\n/g, '<br>')}</p>`).join('') : '';
+const docOf = t => t.doc || noteToDoc(t.note);
+const docText = h => { const d = document.createElement('div'); d.innerHTML = h; return (d.textContent || '').replace(/\s+/g, ' ').trim(); };
 const NORMALIZE = {
   home(r) {
     const d = DEFAULTS.home(), q = lines(r.quotes, 300);
@@ -624,9 +692,9 @@ const NORMALIZE = {
   tasks(r) {
     need(Array.isArray(r.items));
     return {
-      v: 1, projects: [...new Set(lines(r.projects, 60))].slice(0, 100), items: r.items.filter(t => isObj(t) && str(t.title).trim()).map(t => ({
+      v: 1, projects: [...new Set(lines(r.projects, 60))].slice(0, 100), pnotes: Object.fromEntries(Object.entries(isObj(r.pnotes) ? r.pnotes : {}).slice(0, 200).map(([k, v]) => [str(k, 60), cleanDoc(str(v, 60000))]).filter(([k, v]) => k && v)), items: r.items.filter(t => isObj(t) && str(t.title).trim()).map(t => ({
         id: str(t.id, 40) || uid(), title: str(t.title, 300).trim(), prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne',
-        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), steps: arr(t.steps).filter(x => isObj(x) && str(x.text).trim()).map(x => ({ id: str(x.id, 40) || uid(), text: str(x.text, 200).trim(), done: !!x.done })).slice(0, 50), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), done: !!t.done,
+        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), steps: arr(t.steps).filter(x => isObj(x) && str(x.text).trim()).map(x => ({ id: str(x.id, 40) || uid(), text: str(x.text, 200).trim(), done: !!x.done })).slice(0, 50), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), doc: cleanDoc(str(t.doc, 60000)), done: !!t.done,
         doneAt: validD(t.doneAt) ? t.doneAt : '', created: validD(t.created) ? t.created : today()
       }))
     };
@@ -1025,7 +1093,7 @@ const SECTIONS = [
 ];
 SECTIONS.forEach((s, i) => s.no = pad(i + 1));
 const VIEWS = {}, ACT = {}, CH = {}, INP = {}, SUB = {};
-let cur = 'accueil', pendingRender = false, freshT = 0, exportSnooze = false, lastDay = today();
+let cur = 'accueil', PAGE = null, pendingRender = false, freshT = 0, exportSnooze = false, lastDay = today();
 
 function markFresh() {
   const c = document.documentElement.classList;
@@ -1036,11 +1104,16 @@ function go(id) {
   if (!SECTIONS.some(s => s.id === id)) id = 'accueil';
   if (location.hash.slice(1) !== id) location.hash = id; else { cur = id; markFresh(); render(); }
 }
-window.addEventListener('hashchange', () => {
-  const id = location.hash.slice(1);
-  cur = SECTIONS.some(s => s.id === id) ? id : 'accueil';
-  markFresh(); render(); scrollTo(0, 0);
-});
+/** Lit l'adresse : section ou sous-page (#tache/ID, #projet/NOM, #concentration/ID). */
+function route() {
+  const h = location.hash.slice(1), m = h.match(/^(tache|projet|concentration)\/(.+)$/);
+  edFlush();
+  if (m) { let k = m[2]; try { k = decodeURIComponent(k); } catch (e) { } PAGE = { type: m[1], key: k }; cur = 'taches'; }
+  else { PAGE = null; cur = SECTIONS.some(s => s.id === h) ? h : 'accueil'; }
+  if (!PAGE || PAGE.type !== 'concentration') focusLeave();
+}
+const pageUrl = (type, key) => '#' + type + '/' + encodeURIComponent(key);
+window.addEventListener('hashchange', () => { route(); markFresh(); render(); scrollTo(0, 0); });
 function renderNav() {
   const t0 = today(), late = S.tasks.items.filter(t => !t.done && t.due && t.due < t0).length;
   $('#nav').innerHTML = SECTIONS.map(s => `<button class="nb" data-a="go" data-id="${s.id}"${s.id === cur ? ' aria-current="page"' : ''} title="${s.label} (touche ${+s.no})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${s.icon}"/></svg><span class="no">${s.no}</span><span class="lb">${s.label}</span>${s.id === 'taches' && late ? `<span class="badge" aria-label="${plural(late, 'tâche en retard', 'tâches en retard')}">${late}</span>` : ''}</button>`).join('');
@@ -1063,7 +1136,8 @@ function render() {
   document.body.dataset.view = cur;
   $('#secno').textContent = 'Section ' + sec.no; $('#sectitle').textContent = sec.label;
   document.title = sec.label + ' · Mon dashboard';
-  try { v.innerHTML = VIEWS[cur](); }
+  edFlush();
+  try { v.innerHTML = PAGE ? pageHTML() : VIEWS[cur](); }
   catch (e) {
     console.error(e);
     v.innerHTML = `<div class="hud">${empty('Cette section a rencontré un problème', 'Les autres sections continuent de fonctionner et vos données ne sont pas effacées.', '<button class="btn" data-a="exportData">Exporter mes données</button>')}</div>`;
@@ -1072,7 +1146,7 @@ function render() {
 /** Rendu différé si l'utilisateur est en train d'écrire, pour ne pas lui faire perdre le curseur. */
 function renderSoft() {
   const a = document.activeElement;
-  if (a && a.closest && a.closest('#view') && a.matches('textarea,input:not([type=checkbox]):not([type=radio])')) pendingRender = true; else render();
+  if (a && a.closest && a.closest('#view') && a.matches('textarea,[contenteditable],input:not([type=checkbox]):not([type=radio])')) pendingRender = true; else render();
 }
 function renderAll() { renderAuth(); renderGate(); setSync(); render(); }
 const A = id => esc(id);
@@ -1097,7 +1171,8 @@ document.addEventListener('submit', e => { const t = e.target.closest && e.targe
 document.addEventListener('focusout', e => { if (pendingRender && e.target.closest && e.target.closest('#view')) setTimeout(() => { if (pendingRender) renderSoft(); }, 280); });
 document.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey || $('#dlg').open || !$('#gate').hidden) return;
-  if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return;
+  if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) { if (e.key === 'Escape' && PAGE) { e.target.blur(); e.preventDefault(); } return; }
+  if (e.key === 'Escape' && PAGE) { ACT.pageBack(); return; }
   const k = e.key;
   if (k === '?') ACT.help();
   else if (/^[1-9]$/.test(k)) go(SECTIONS[k - 1].id);
@@ -1228,7 +1303,7 @@ function taskRow(t, t0, compact) {
     <button class="chk" role="checkbox" aria-checked="${t.done}" data-a="taskToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} : ${esc(t.title)}">✓</button>
     <div class="grow"><div class="it-title"><button class="it-open" data-a="taskOpen" data-id="${A(t.id)}" title="Voir la fiche">${esc(t.title)}</button></div><div class="meta"><span class="chip ${t.prio}">Priorité ${t.prio}</span>${(t.steps || []).length ? `<span class="chip">${t.steps.filter(x => x.done).length}/${t.steps.length} étapes</span>` : ''}
       ${t.due ? (late ? `<span class="chip late">En retard · ${esc(fmtShort(t.due))}</span>` : `<span>Échéance : ${esc(relDay(t.due))}</span>`) : ''}
-      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${t.note && !compact ? `<span>Note : ${esc(t.note.slice(0, 70))}${t.note.length > 70 ? '…' : ''}</span>` : ''}</div></div>
+      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${!compact && docOf(t) ? (() => { const x = docText(docOf(t)); return `<span>Note : ${esc(x.slice(0, 70))}${x.length > 70 ? '…' : ''}</span>`; })() : ''}</div></div>
     ${compact ? '' : `${t.done ? '' : `<button class="ic" data-a="focusOpen" data-id="${A(t.id)}" aria-label="Se concentrer sur ${esc(t.title)}" title="Se concentrer">◎</button>`}<button class="ic" data-a="taskEdit" data-id="${A(t.id)}" aria-label="Modifier ${esc(t.title)}" title="Modifier">✎</button><button class="ic" data-a="taskDel" data-id="${A(t.id)}" aria-label="Supprimer ${esc(t.title)}" title="Supprimer">✕</button>`}</li>`;
 }
 const sel = (c, k, v, opts, label) => `<div><label for="s_${c}_${k}">${label}</label><select id="s_${c}_${k}" data-c="${c}" data-k="${k}">${opts.map(([val, lab]) => `<option value="${esc(val)}"${val === v ? ' selected' : ''}>${esc(lab)}</option>`).join('')}</select></div>`;
@@ -1242,7 +1317,7 @@ function taskGroups(shown, all, t0) {
   return names.map(n => {
     const mine = shown.filter(t => (t.project || '') === n), key = encodeURIComponent(n), closed = TF.closed.has(n);
     const tot = n ? all.filter(t => t.project === n) : [], done = tot.filter(t => t.done).length, pct = tot.length ? Math.round(done / tot.length * 100) : 0;
-    return `<div class="proj${closed ? ' closed' : ''}"><div class="row proj-h"><button class="proj-toggle" data-a="projToggle" data-k="${key}" aria-expanded="${!closed}"><span class="chev" aria-hidden="true">▾</span>${esc(n || 'Sans projet')}</button><span class="muted small grow">${n ? (tot.length ? `${done} / ${tot.length} terminées` : 'vide') : plural(mine.length, 'tâche', 'tâches')}</span>${n ? `<button class="ic" data-a="taskNewIn" data-k="${key}" aria-label="Ajouter une tâche à ${esc(n)}" title="Ajouter une tâche à ce projet">+</button><button class="ic" data-a="projEdit" data-k="${key}" aria-label="Modifier le projet ${esc(n)}" title="Modifier le projet">✎</button>` : ''}</div>${n && !closed ? bar(pct, '', `Avancement de ${n} : ${pct} %`) : ''}${closed ? '' : mine.length ? `<ul class="list">${mine.map(t => taskRow(t, t0)).join('')}</ul>` : '<p class="muted small" style="padding:10px 2px">Aucune tâche à afficher dans ce projet.</p>'}</div>`;
+    return `<div class="proj${closed ? ' closed' : ''}"><div class="row proj-h"><button class="proj-toggle" data-a="projToggle" data-k="${key}" aria-expanded="${!closed}"><span class="chev" aria-hidden="true">▾</span>${esc(n || 'Sans projet')}</button><span class="muted small grow">${n ? (tot.length ? `${done} / ${tot.length} terminées` : 'vide') : plural(mine.length, 'tâche', 'tâches')}</span>${n ? `<button class="ic" data-a="projOpen" data-k="${key}" aria-label="Ouvrir la page du projet ${esc(n)}" title="Ouvrir la page du projet">↗</button><button class="ic" data-a="taskNewIn" data-k="${key}" aria-label="Ajouter une tâche à ${esc(n)}" title="Ajouter une tâche à ce projet">+</button><button class="ic" data-a="projEdit" data-k="${key}" aria-label="Modifier le projet ${esc(n)}" title="Modifier le projet">✎</button>` : ''}</div>${n && !closed ? bar(pct, '', `Avancement de ${n} : ${pct} %`) : ''}${closed ? '' : mine.length ? `<ul class="list">${mine.map(t => taskRow(t, t0)).join('')}</ul>` : '<p class="muted small" style="padding:10px 2px">Aucune tâche à afficher dans ce projet.</p>'}</div>`;
   }).join('');
 }
 VIEWS.taches = () => {
@@ -1274,7 +1349,7 @@ ACT.taskMore = () => { TF.limit += 150; render(); };
 SUB.taskQuick = form => {
   const title = $('#quick', form).value.trim();
   if (!title) return;
-  S.tasks.items.push({ id: uid(), title: title.slice(0, 300), prio: 'moyenne', due: '', project: TF.project && TF.project !== '-' ? TF.project : '', steps: [], tags: [], note: '', done: false, doneAt: '', created: today() });
+  S.tasks.items.push({ id: uid(), title: title.slice(0, 300), prio: 'moyenne', due: '', project: TF.project && TF.project !== '-' ? TF.project : '', steps: [], tags: [], note: '', doc: '', done: false, doneAt: '', created: today() });
   commit('tasks'); const q = $('#quick'); if (q) q.focus();
 };
 function taskForm(t, defProject) {
@@ -1283,11 +1358,10 @@ function taskForm(t, defProject) {
     fields: [{ n: 'title', l: 'Titre', req: true, v: t && t.title, max: 300 },
     [{ n: 'prio', l: 'Priorité', t: 'select', v: t ? t.prio : 'moyenne', opts: [['haute', 'Haute'], ['moyenne', 'Moyenne'], ['basse', 'Basse']] }, { n: 'due', l: 'Échéance (optionnelle)', t: 'date', v: t && t.due }],
     { n: 'project', l: 'Projet (optionnel)', v: t ? t.project : (defProject != null ? defProject : (TF.project && TF.project !== '-' ? TF.project : '')), ph: 'Choisir ou créer un projet', max: 60, list: taskProjects() },
-    { n: 'tags', l: 'Étiquettes, séparées par des virgules', v: t ? t.tags.join(', ') : '', ph: 'maison, travail' },
-    { n: 'note', l: 'Note', t: 'textarea', v: t && t.note }],
+    { n: 'tags', l: 'Étiquettes, séparées par des virgules', v: t ? t.tags.join(', ') : '', ph: 'maison, travail' }],
     onOk(v) {
-      const data = { title: v.title, prio: v.prio, due: v.due, project: v.project.trim().slice(0, 60), tags: [...new Set(v.tags.split(',').map(x => x.trim().replace(/^#/, '').slice(0, 40)).filter(Boolean))].slice(0, 10), note: v.note };
-      if (t) Object.assign(t, data); else S.tasks.items.push({ id: uid(), done: false, doneAt: '', created: today(), steps: [], ...data });
+      const data = { title: v.title, prio: v.prio, due: v.due, project: v.project.trim().slice(0, 60), tags: [...new Set(v.tags.split(',').map(x => x.trim().replace(/^#/, '').slice(0, 40)).filter(Boolean))].slice(0, 10) };
+      if (t) Object.assign(t, data); else S.tasks.items.push({ id: uid(), done: false, doneAt: '', created: today(), steps: [], doc: '', ...data });
       commit('tasks'); toast(t ? 'Tâche modifiée.' : 'Tâche ajoutée.');
     }
   });
@@ -1321,48 +1395,139 @@ SUB.projSave = form => {
   if (nn !== old && taskProjects().some(x => projSame(x, nn) && !projSame(x, old))) return fail('Un projet porte déjà ce nom.');
   S.tasks.items.forEach(t => { if (t.project === old) t.project = nn; });
   S.tasks.projects = [...new Set((S.tasks.projects || []).map(x => x === old ? nn : x))];
+  if (S.tasks.pnotes && S.tasks.pnotes[old] != null && nn !== old) { S.tasks.pnotes[nn] = S.tasks.pnotes[old]; delete S.tasks.pnotes[old]; }
+  if (PAGE && PAGE.type === 'projet' && PAGE.key === old) { PAGE.key = nn; history.replaceState(null, '', pageUrl('projet', nn)); }
   if (TF.project === old) TF.project = nn;
   if (TF.closed.delete(old)) TF.closed.add(nn);
   AI.convs.forEach(c => { if (c.project === old) c.project = nn; }); ls.set('aiconvs', AI.convs.filter(c => c.msgs.length));
   commit('tasks'); $('#dlg').close('ok'); if (nn !== old) toast('Projet renommé.');
 };
 ACT.projDissolve = d => {
-  const name = decodeURIComponent(d.k); $('#dlg').close('no'); if (TF.project === name) TF.project = '';
-  withUndo('tasks', `Projet « ${name} » retiré, tâches conservées.`, () => { S.tasks.items.forEach(t => { if (t.project === name) t.project = ''; }); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); });
+  const name = decodeURIComponent(d.k); $('#dlg').close('no'); if (PAGE && PAGE.type === 'projet') location.hash = '#taches'; if (TF.project === name) TF.project = '';
+  withUndo('tasks', `Projet « ${name} » retiré, tâches conservées.`, () => { S.tasks.items.forEach(t => { if (t.project === name) t.project = ''; }); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); if (S.tasks.pnotes) delete S.tasks.pnotes[name]; });
 };
 ACT.projDelete = d => {
   const name = decodeURIComponent(d.k), n = S.tasks.items.filter(t => t.project === name).length;
   confirmDlg({ title: `Supprimer le projet « ${name} » ?`, msg: `Le projet et ses ${plural(n, 'tâche', 'tâches')} seront supprimés. Vous pourrez annuler juste après.`, ok: 'Supprimer', danger: true,
-    onOk() { if (TF.project === name) TF.project = ''; withUndo('tasks', `Projet « ${name} » supprimé.`, () => { S.tasks.items = S.tasks.items.filter(t => t.project !== name); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); }); } });
+    onOk() { if (PAGE && PAGE.type === 'projet') location.hash = '#taches'; if (TF.project === name) TF.project = ''; withUndo('tasks', `Projet « ${name} » supprimé.`, () => { S.tasks.items = S.tasks.items.filter(t => t.project !== name); S.tasks.projects = (S.tasks.projects || []).filter(x => x !== name); if (S.tasks.pnotes) delete S.tasks.pnotes[name]; }); } });
 };
 
-/* ---------- Fiche d'une tâche (détails et étapes) ---------- */
-function taskDetail(id, keep) {
-  focusLeave();
-  const t = S.tasks.items.find(x => x.id === id), d = $('#dlg');
-  if (!t) { if (d.open) d.close('no'); return; }
-  t.steps = t.steps || [];
-  const n = t.steps.length, dn = t.steps.filter(x => x.done).length, t0 = today(), late = !t.done && t.due && t.due < t0, y = d.scrollTop;
-  dlgOpen(`<div class="td">
-    <div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:12px"><button class="chk" style="margin-top:6px" role="checkbox" aria-checked="${t.done}" data-a="tdToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} la tâche">✓</button>
-      <h2 class="dlg-t grow${t.done ? ' muted' : ''}" style="margin:0;${t.done ? 'text-decoration:line-through;' : ''}overflow-wrap:anywhere">${esc(t.title)}</h2><button class="ic" data-a="dlgClose" aria-label="Fermer">✕</button></div>
-    <div class="meta" style="margin:12px 0 4px"><span class="chip ${t.prio}">Priorité ${t.prio}</span>${t.due ? (late ? `<span class="chip late">En retard · ${esc(fmtShort(t.due))}</span>` : `<span class="chip">Échéance : ${esc(relDay(t.due))}</span>`) : ''}${t.project ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}</div>
-    ${t.note ? `<p class="small" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0">${esc(t.note)}</p>` : ''}
-    <h3 class="td-h">Étapes${n ? ` <span class="muted small">${dn} / ${n}</span>` : ''}</h3>
-    ${n ? bar(dn / n * 100, '', `Étapes terminées : ${dn} sur ${n}`) : '<p class="muted small" style="margin-bottom:8px">Découpez la tâche en petites étapes pour avancer pas à pas.</p>'}
-    ${n ? `<ul class="list">${t.steps.map(x => `<li class="${x.done ? 'done' : ''}"><button class="chk" role="checkbox" aria-checked="${x.done}" data-a="tdStepToggle" data-id="${A(t.id)}" data-k="${A(x.id)}" aria-label="${x.done ? 'Rouvrir' : 'Terminer'} : ${esc(x.text)}">✓</button><span class="grow it-title">${esc(x.text)}</span><button class="ic" data-a="tdStepDel" data-id="${A(t.id)}" data-k="${A(x.id)}" aria-label="Supprimer l’étape ${esc(x.text)}" title="Supprimer l’étape">✕</button></li>`).join('')}</ul>` : ''}
-    <form class="row" data-s="tdStepAdd" data-id="${A(t.id)}" style="margin-top:10px"><input class="grow" id="tdsi" type="text" maxlength="200" placeholder="Ajouter une étape, puis Entrée" aria-label="Nouvelle étape" autocomplete="off"><button class="btn">Ajouter</button></form>
-    <div class="row" style="margin-top:20px">${t.done ? '' : `<button class="btn primary" data-a="focusOpen" data-id="${A(t.id)}">◎ Se concentrer</button>`}<button class="btn" data-a="tdEdit" data-id="${A(t.id)}">Modifier</button><span class="grow"></span><button class="btn ghost danger" data-a="tdDel" data-id="${A(t.id)}">Supprimer</button></div></div>`);
-  if (keep) d.scrollTop = y;
+/* ---------- Éditeur de notes (texte riche simple, enregistrement automatique) ---------- */
+const ED = { t: 0 };
+function edHTML(kind, key, html) {
+  const b = (c, label, txt) => `<button type="button" class="ed-b" data-ed="${c}" aria-label="${label}" title="${label}">${txt}</button>`;
+  return `<div class="ed-wrap"><div class="ed-bar" role="toolbar" aria-label="Mise en forme">${b('h2', 'Grand titre', 'T')}${b('h3', 'Sous-titre', 't')}<i></i>${b('bold', 'Gras (Ctrl+B)', '<b>G</b>')}${b('italic', 'Italique (Ctrl+I)', '<em>I</em>')}${b('underline', 'Souligné (Ctrl+U)', '<u>S</u>')}<i></i>${b('ul', 'Liste à puces', '•')}${b('ol', 'Liste numérotée', '1.')}${b('ck', 'Cases à cocher', '☑')}${b('quote', 'Citation', '❝')}${b('hr', 'Séparateur', '―')}${b('p', 'Texte normal', '¶')}<span class="grow"></span><span class="ed-st muted small" id="edst" aria-live="polite">Enregistré</span></div>
+    <div class="ed" id="ed" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notes" data-ph="Écrivez vos notes ici : idées, liens, ce qu’il faut retenir…" data-kind="${kind}" data-key="${A(key)}">${html}</div></div>`;
 }
-/** Modifie une tâche puis rafraîchit la liste, et la fiche ou le mode concentration qui est ouvert. */
+function edSave() {
+  clearTimeout(ED.t); ED.t = 0;
+  const el = $('#ed'); if (!el || !el.dataset.kind) return;
+  const html = cleanDoc(el.innerHTML), k = el.dataset.key;
+  if (el.dataset.kind === 'task') {
+    const t = S.tasks.items.find(x => x.id === k); if (!t || docOf(t) === html) return;
+    t.doc = html; t.note = '';
+  } else {
+    const o = S.tasks.pnotes = S.tasks.pnotes || {}; if ((o[k] || '') === html) return;
+    if (html) o[k] = html; else delete o[k];
+  }
+  commit('tasks', { silent: true });
+  const st = $('#edst'); if (st) st.textContent = 'Enregistré';
+}
+const edFlush = () => { if (ED.t) edSave(); };
+document.addEventListener('input', e => {
+  const el = e.target.closest && e.target.closest('#ed'); if (!el) return;
+  const st = $('#edst'); if (st) st.textContent = 'Modifications…';
+  clearTimeout(ED.t); ED.t = setTimeout(edSave, 600);
+});
+document.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('#ed')) edFlush(); });
+document.addEventListener('paste', e => {
+  if (!(e.target.closest && e.target.closest('#ed'))) return;
+  e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain'));
+});
+document.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('.ed-b')) e.preventDefault(); });
+document.addEventListener('click', e => {
+  const li = e.target.closest && e.target.closest('#ed ul.ck > li');
+  if (li && e.target === li && e.offsetX < 30) { if (li.getAttribute('data-d') === '1') li.removeAttribute('data-d'); else li.setAttribute('data-d', '1'); edSave(); return; }
+  const b = e.target.closest && e.target.closest('.ed-b'); if (!b) return;
+  const ed = $('#ed'); if (!ed) return; ed.focus();
+  const c = b.dataset.ed, x = (cmd, v) => document.execCommand(cmd, false, v);
+  const sel = window.getSelection(), up = tag => { let n = sel.anchorNode; while (n && n !== ed) { if (n.nodeType === 1 && n.tagName === tag) return n; n = n.parentNode; } return null; };
+  if (c === 'h2' || c === 'h3') x('formatBlock', up(c.toUpperCase()) ? 'p' : c);
+  else if (c === 'p') { if (up('UL') || up('OL')) x(up('UL') ? 'insertUnorderedList' : 'insertOrderedList'); x('formatBlock', 'p'); }
+  else if (c === 'quote') x('formatBlock', up('BLOCKQUOTE') ? 'p' : 'blockquote');
+  else if (c === 'hr') x('insertHorizontalRule');
+  else if (c === 'ul' || c === 'ol') { const u = up(c.toUpperCase()); if (u && u.classList.contains('ck')) u.classList.remove('ck'); else x(c === 'ul' ? 'insertUnorderedList' : 'insertOrderedList'); }
+  else if (c === 'ck') { let u = up('UL'); if (!u) { x('insertUnorderedList'); u = up('UL'); } if (u) u.classList.toggle('ck'); }
+  else x(c);
+  edSave();
+});
+
+/* ---------- Pages : tâche, projet, concentration ---------- */
+const prioL = { haute: 'Haute', moyenne: 'Moyenne', basse: 'Basse' };
+function crumbs(parts) {
+  return `<nav class="crumbs" aria-label="Fil d’Ariane">${parts.map((p, i) => i === parts.length - 1 ? `<span aria-current="page">${esc(p[0])}</span>` : `<a href="${A(p[1])}">${esc(p[0])}</a><span aria-hidden="true">›</span>`).join('')}</nav>`;
+}
+function stepsHTML(t, focus) {
+  const st = t.steps || [], dn = st.filter(x => x.done).length;
+  return `${focus ? '' : `<h3 class="td-h" style="margin-top:0">Étapes${st.length ? ` <span class="muted small">${dn} / ${st.length}</span>` : ''}</h3>${st.length ? bar(dn / st.length * 100, '', `Étapes terminées : ${dn} sur ${st.length}`) : '<p class="muted small" style="margin-bottom:8px">Découpez la tâche en petites étapes pour avancer pas à pas.</p>'}`}
+    ${st.length ? `<ul class="list">${st.map(x => `<li class="${x.done ? 'done' : ''}"><button class="chk" role="checkbox" aria-checked="${x.done}" data-a="tdStepToggle" data-id="${A(t.id)}" data-k="${A(x.id)}" aria-label="${x.done ? 'Rouvrir' : 'Terminer'} : ${esc(x.text)}">✓</button><span class="grow it-title">${esc(x.text)}</span>${focus ? '' : `<button class="ic" data-a="tdStepDel" data-id="${A(t.id)}" data-k="${A(x.id)}" aria-label="Supprimer l’étape ${esc(x.text)}" title="Supprimer l’étape">✕</button>`}</li>`).join('')}</ul>` : ''}
+    ${focus ? '' : `<form class="row" data-s="tdStepAdd" data-id="${A(t.id)}" style="margin-top:10px"><input class="grow" id="tdsi" type="text" maxlength="200" placeholder="Ajouter une étape, puis Entrée" aria-label="Nouvelle étape" autocomplete="off"><button class="btn">Ajouter</button></form>`}`;
+}
+function missingPage(msg) { return `<div class="hud">${empty(msg, 'Elle a peut-être été supprimée.', '<button class="btn primary" data-a="pageBack">Retour aux tâches</button>')}</div>`; }
+function taskPage(t) {
+  const t0 = today(), late = !t.done && t.due && t.due < t0;
+  return `<div class="page">${crumbs([['Tâches', '#taches'], ...(t.project ? [[t.project, pageUrl('projet', t.project)]] : []), [t.title]])}
+    <div class="page-head"><button class="chk big" role="checkbox" aria-checked="${t.done}" data-a="tdToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} la tâche">✓</button>
+      <input class="tp-title${t.done ? ' done' : ''}" data-i="tpTitle" data-id="${A(t.id)}" value="${A(t.title)}" maxlength="300" aria-label="Titre de la tâche"></div>
+    <div class="page-props">
+      <label class="prop"><span>Priorité</span><select data-c="tpPrio" data-id="${A(t.id)}">${['haute', 'moyenne', 'basse'].map(p => `<option value="${p}"${t.prio === p ? ' selected' : ''}>${prioL[p]}</option>`).join('')}</select></label>
+      <label class="prop"><span>Échéance${late ? ' <b class="late-t">· en retard</b>' : ''}</span><input type="date" data-c="tpDue" data-id="${A(t.id)}" value="${A(t.due)}"></label>
+      <label class="prop"><span>Projet</span><input type="text" list="dl_tp" data-c="tpProj" data-id="${A(t.id)}" value="${A(t.project)}" maxlength="60" placeholder="Aucun" autocomplete="off"><datalist id="dl_tp">${taskProjects().map(o => `<option value="${A(o)}">`).join('')}</datalist></label>
+      ${t.tags.length ? `<div class="prop"><span>Étiquettes</span><div class="meta">${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}</div></div>` : ''}</div>
+    <div class="page-cols"><section class="page-main"><h3 class="td-h" style="margin-top:0">Notes</h3>${edHTML('task', t.id, docOf(t))}</section>
+      <aside class="page-side"><div class="hud">${stepsHTML(t)}</div>
+        <div class="row" style="margin-top:14px">${t.done ? '' : `<button class="btn primary" data-a="focusOpen" data-id="${A(t.id)}">◎ Se concentrer</button>`}<button class="btn" data-a="tdEdit" data-id="${A(t.id)}">Étiquettes…</button><span class="grow"></span><button class="btn ghost danger" data-a="tdDel" data-id="${A(t.id)}">Supprimer</button></div></aside></div></div>`;
+}
+function projectPage(name) {
+  if (!taskProjects().includes(name)) return missingPage('Ce projet est introuvable.');
+  const all = S.tasks.items.filter(t => t.project === name), done = all.filter(t => t.done).length, pct = all.length ? Math.round(done / all.length * 100) : 0, t0 = today();
+  const open = all.filter(t => !t.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1), fin = all.filter(t => t.done);
+  return `<div class="page">${crumbs([['Tâches', '#taches'], [name]])}
+    <div class="page-head"><h2 class="page-title grow">${esc(name)}</h2><button class="btn" data-a="projEdit" data-k="${A(encodeURIComponent(name))}">Modifier le projet</button></div>
+    <div class="page-props"><div class="prop" style="min-width:240px;flex:1"><span>Avancement : ${done} sur ${all.length} terminée${done > 1 ? 's' : ''}</span>${bar(pct, '', `Avancement : ${pct} %`)}</div></div>
+    <div class="page-cols"><section class="page-main"><h3 class="td-h" style="margin-top:0">Notes du projet</h3>${edHTML('project', name, (S.tasks.pnotes || {})[name] || '')}</section>
+      <aside class="page-side"><div class="hud"><h3 class="td-h" style="margin-top:0">Tâches</h3>
+        <form class="row" data-s="projQuick" data-k="${A(encodeURIComponent(name))}"><input class="grow" type="text" name="t" maxlength="300" placeholder="Ajouter une tâche, puis Entrée" aria-label="Nouvelle tâche" autocomplete="off"><button class="btn">Ajouter</button></form>
+        ${open.length ? `<ul class="list" style="margin-top:8px">${open.map(t => taskRow(t, t0, true)).join('')}</ul>` : '<p class="muted small" style="margin-top:10px">Aucune tâche à faire dans ce projet.</p>'}
+        ${fin.length ? `<h3 class="td-h">Terminées (${fin.length})</h3><ul class="list">${fin.map(t => taskRow(t, t0, true)).join('')}</ul>` : ''}</div></aside></div></div>`;
+}
+function focusPage(t) {
+  const st = t.steps || [], next = st.find(x => !x.done), dn = st.filter(x => x.done).length, run = !!FOCUS.timer;
+  return `<div class="page focus-page">${crumbs([['Tâches', '#taches'], ...(t.project ? [[t.project, pageUrl('projet', t.project)]] : []), [t.title, pageUrl('tache', t.id)], ['Concentration']])}
+    <div class="page-cols"><section class="focus-in"><h2 class="focus-t">${esc(t.title)}</h2>${t.due ? `<p class="muted small">Échéance : ${esc(relDay(t.due))}</p>` : ''}
+      <div class="focus-timer"><div class="focus-time" id="ftime" role="timer" aria-label="Temps restant">${fmtT(run ? Math.max(0, Math.round((FOCUS.end - Date.now()) / 1000)) : FOCUS.left)}</div>
+        <div class="row" style="justify-content:center">${run ? '<button class="btn" data-a="focusPause">Pause</button>' : '<button class="btn primary" data-a="focusStart">Démarrer</button>'}<button class="btn ghost" data-a="focusReset">Remettre à zéro</button>
+        <select data-c="focusDur" aria-label="Durée de la session" style="width:auto"${run ? ' disabled' : ''}>${[15, 25, 45, 60].map(m => `<option value="${m}"${m * 60 === FOCUS.dur ? ' selected' : ''}>${m} min</option>`).join('')}</select></div></div>
+      ${st.length ? `<div class="focus-next"><span class="muted small">${next ? 'Prochaine étape' : 'Toutes les étapes sont faites'}</span>${next ? `<div class="focus-step">${esc(next.text)}</div><button class="btn primary" data-a="tdStepToggle" data-id="${A(t.id)}" data-k="${A(next.id)}">Étape terminée ✓</button>` : ''}</div>${bar(dn / st.length * 100, '', `Étapes terminées : ${dn} sur ${st.length}`)}<div style="text-align:left">${stepsHTML(t, true)}</div>` : '<p class="muted small" style="margin:14px 0 0">Cette tâche n’a pas d’étapes. Ouvrez la fiche pour en ajouter.</p>'}
+      <div class="row" style="justify-content:center;margin-top:22px"><button class="btn" data-a="focusQuit" data-id="${A(t.id)}">Quitter</button><button class="btn primary" data-a="focusFinish" data-id="${A(t.id)}">Terminer la tâche</button></div></section>
+      <aside class="page-side"><h3 class="td-h" style="margin-top:0">Notes</h3>${edHTML('task', t.id, docOf(t))}</aside></div></div>`;
+}
+function pageHTML() {
+  const k = PAGE.key;
+  if (PAGE.type === 'projet') return projectPage(k);
+  const t = S.tasks.items.find(x => x.id === k);
+  if (!t) return missingPage('Cette tâche est introuvable.');
+  t.steps = t.steps || [];
+  return PAGE.type === 'concentration' ? focusPage(t) : taskPage(t);
+}
 function tdMutate(id, fn) {
   const t = S.tasks.items.find(x => x.id === id); if (!t) return null;
-  t.steps = t.steps || []; fn(t); commit('tasks');
-  if (FOCUS.open) focusPaint(); else taskDetail(id, true);
+  edFlush(); t.steps = t.steps || []; fn(t); commit('tasks');
   return t;
 }
-ACT.taskOpen = d => taskDetail(d.id);
+ACT.pageBack = () => { if (PAGE && PAGE.type === 'concentration') location.hash = pageUrl('tache', PAGE.key); else go('taches'); };
+ACT.taskOpen = d => { location.hash = pageUrl('tache', d.id); };
+ACT.projOpen = d => { location.hash = '#projet/' + d.k; };
 ACT.tdToggle = d => tdMutate(d.id, t => { t.done = !t.done; t.doneAt = t.done ? today() : ''; });
 ACT.tdStepToggle = d => tdMutate(d.id, t => { const x = t.steps.find(z => z.id === d.k); if (x) x.done = !x.done; });
 ACT.tdStepDel = d => tdMutate(d.id, t => { t.steps = t.steps.filter(z => z.id !== d.k); });
@@ -1371,10 +1536,19 @@ SUB.tdStepAdd = form => {
   tdMutate(form.dataset.id, t => { if (t.steps.length < 50) t.steps.push({ id: uid(), text, done: false }); });
   const n = $('#tdsi'); if (n) n.focus();
 };
-ACT.tdEdit = d => { const t = S.tasks.items.find(x => x.id === d.id); if (t) { $('#dlg').close('no'); taskForm(t); } };
-ACT.tdDel = d => { $('#dlg').close('no'); ACT.taskDel(d); };
+INP.tpTitle = (d, el) => { const t = S.tasks.items.find(x => x.id === d.id), v = el.value.trim(); if (t && v) { t.title = v.slice(0, 300); commit('tasks', { silent: true }); } pendingRender = true; };
+CH.tpPrio = (d, el) => tdMutate(d.id, t => { t.prio = el.value; });
+CH.tpDue = (d, el) => tdMutate(d.id, t => { t.due = validD(el.value) ? el.value : ''; });
+CH.tpProj = (d, el) => tdMutate(d.id, t => { t.project = el.value.trim().slice(0, 60); });
+SUB.projQuick = form => {
+  const name = decodeURIComponent(form.dataset.k), v = form.elements.t.value.trim().slice(0, 300); if (!v) return;
+  S.tasks.items.push({ id: uid(), title: v, prio: 'moyenne', due: '', project: name, steps: [], tags: [], note: '', doc: '', done: false, doneAt: '', created: today() });
+  commit('tasks'); const i = $('#view input[name=t]'); if (i) i.focus();
+};
+ACT.tdEdit = d => { const t = S.tasks.items.find(x => x.id === d.id); if (t) taskForm(t); };
+ACT.tdDel = d => { location.hash = '#taches'; ACT.taskDel(d); };
 
-/* ---------- Mode concentration : une tâche, ses étapes, un minuteur ---------- */
+/* ---------- Mode concentration (page) : une tâche, ses étapes, un minuteur ---------- */
 const FOCUS = { id: '', open: false, dur: 25 * 60, left: 25 * 60, end: 0, timer: 0 };
 const fmtT = s => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
 function focusStop() { if (FOCUS.timer) { clearInterval(FOCUS.timer); FOCUS.timer = 0; FOCUS.left = Math.max(1, Math.round((FOCUS.end - Date.now()) / 1000)); } }
@@ -1388,40 +1562,21 @@ function focusTick() {
   toast('Session terminée. Prenez une pause !', { ms: 7000 });
   try { if (Notification.permission === 'granted') new Notification('Session terminée', { body: t ? t.title : '' }); } catch (e) { }
   try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); g.gain.value = .07; o.frequency.value = 660; o.start(); setTimeout(() => { o.stop(); a.close(); }, 400); } catch (e) { }
-  focusPaint();
-}
-function focusHTML(t) {
-  const st = t.steps || [], next = st.find(x => !x.done), dn = st.filter(x => x.done).length, run = !!FOCUS.timer;
-  return `<div class="focus-in"><div class="row"><span class="muted small grow" style="text-align:left">${t.project ? esc(t.project) + ' · ' : ''}Concentration</span><button class="ic" data-a="focusQuit" aria-label="Quitter le mode concentration" title="Quitter">✕</button></div>
-    <h2 class="focus-t">${esc(t.title)}</h2>${t.due ? `<p class="muted small">Échéance : ${esc(relDay(t.due))}</p>` : ''}
-    ${st.length ? `<div class="focus-next"><span class="muted small">${next ? 'Prochaine étape' : 'Toutes les étapes sont faites'}</span>${next ? `<div class="focus-step">${esc(next.text)}</div><button class="btn primary" data-a="tdStepToggle" data-id="${A(t.id)}" data-k="${A(next.id)}">Étape terminée ✓</button>` : ''}</div>${bar(dn / st.length * 100, '', `Étapes terminées : ${dn} sur ${st.length}`)}
-      <ul class="list">${st.map(x => `<li class="${x.done ? 'done' : ''}"><button class="chk" role="checkbox" aria-checked="${x.done}" data-a="tdStepToggle" data-id="${A(t.id)}" data-k="${A(x.id)}" aria-label="${x.done ? 'Rouvrir' : 'Terminer'} : ${esc(x.text)}">✓</button><span class="grow it-title">${esc(x.text)}</span></li>`).join('')}</ul>`
-      : '<p class="muted small" style="margin:14px 0 0">Cette tâche n’a pas d’étapes. Ouvrez la fiche pour en ajouter et avancer pas à pas.</p>'}
-    <div class="focus-timer"><div class="focus-time" id="ftime" role="timer" aria-label="Temps restant">${fmtT(run ? Math.max(0, Math.round((FOCUS.end - Date.now()) / 1000)) : FOCUS.left)}</div>
-      <div class="row" style="justify-content:center">${run ? '<button class="btn" data-a="focusPause">Pause</button>' : '<button class="btn primary" data-a="focusStart">Démarrer</button>'}<button class="btn ghost" data-a="focusReset">Remettre à zéro</button>
-      <select data-c="focusDur" aria-label="Durée de la session" style="width:auto"${run ? ' disabled' : ''}>${[15, 25, 45, 60].map(m => `<option value="${m}"${m * 60 === FOCUS.dur ? ' selected' : ''}>${m} min</option>`).join('')}</select></div></div>
-    <div class="row end" style="margin-top:18px"><button class="btn" data-a="taskOpen" data-id="${A(t.id)}">Fiche</button><button class="btn primary" data-a="focusFinish" data-id="${A(t.id)}">Terminer la tâche</button></div></div>`;
-}
-function focusPaint() {
-  const d = $('#dlg'), t = S.tasks.items.find(x => x.id === FOCUS.id);
-  if (!d.open || !FOCUS.open) return;
-  if (!t) { d.close('no'); return; }
-  d.innerHTML = focusHTML(t);
+  render();
 }
 ACT.focusOpen = d => {
   const t = S.tasks.items.find(x => x.id === d.id); if (!t) return;
   if (FOCUS.id !== t.id) { focusStop(); FOCUS.id = t.id; FOCUS.left = FOCUS.dur; }
-  FOCUS.open = true; t.steps = t.steps || [];
-  dlgOpen(focusHTML(t), 'focus', () => focusLeave());
+  FOCUS.open = true; location.hash = pageUrl('concentration', t.id);
 };
-ACT.focusQuit = () => $('#dlg').close('no');
-ACT.focusStart = () => { if (FOCUS.timer) return; FOCUS.end = Date.now() + FOCUS.left * 1000; FOCUS.timer = setInterval(focusTick, 500); focusPaint(); };
-ACT.focusPause = () => { focusStop(); focusPaint(); };
-ACT.focusReset = () => { focusStop(); FOCUS.left = FOCUS.dur; focusPaint(); };
-CH.focusDur = (d, el) => { if (FOCUS.timer) return; FOCUS.dur = FOCUS.left = (+el.value || 25) * 60; focusPaint(); };
+ACT.focusQuit = d => { location.hash = pageUrl('tache', d.id); };
+ACT.focusStart = () => { if (FOCUS.timer) return; FOCUS.open = true; FOCUS.end = Date.now() + FOCUS.left * 1000; FOCUS.timer = setInterval(focusTick, 500); render(); };
+ACT.focusPause = () => { focusStop(); render(); };
+ACT.focusReset = () => { focusStop(); FOCUS.left = FOCUS.dur; render(); };
+CH.focusDur = (d, el) => { if (FOCUS.timer) return; FOCUS.dur = FOCUS.left = (+el.value || 25) * 60; render(); };
 ACT.focusFinish = d => {
   const t = S.tasks.items.find(x => x.id === d.id); if (!t) return;
-  t.done = true; t.doneAt = today(); commit('tasks'); $('#dlg').close('no'); toast('Tâche terminée. Bien joué !');
+  edFlush(); t.done = true; t.doneAt = today(); focusLeave(); toast('Tâche terminée. Bien joué !'); location.hash = pageUrl('tache', t.id); commit('tasks');
 };
 ACT.taskDelAll = () => {
   const n = S.tasks.items.length; if (!n) return;
@@ -2238,7 +2393,7 @@ ACT.aiApply = d => {
   const doneTitles = new Set(S.tasks.items.filter(t => t.project === tag && t.done).map(t => norm(t.title)));
   replaced = S.tasks.items.filter(t => t.project === tag && !t.done).length;
   S.tasks.items = S.tasks.items.filter(t => !(t.project === tag && !t.done));
-  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, steps: (t.steps || []).map(x => ({ id: uid(), text: x, done: false })), tags: [], note: t.note, done: false, doneAt: '', created: t0 }); n++; }
+  for (const t of p.tasks.filter(x => x.on && !doneTitles.has(norm(x.title)))) { S.tasks.items.push({ id: uid(), title: t.title, prio: t.prio, due: t.due, project: tag, steps: (t.steps || []).map(x => ({ id: uid(), text: x, done: false })), tags: [], note: '', doc: noteToDoc(t.note), done: false, doneAt: '', created: t0 }); n++; }
   /* Objectif : mis à jour s'il existe déjà (les étapes déjà cochées restent cochées). */
   if (p.goal && p.goal.on) {
     const g = S.goals.items.find(x => x.cat === tag.slice(0, 40) || norm(x.title) === norm(p.goal.title));
@@ -2394,9 +2549,7 @@ ACT.gateLocal = () => doLogout();
   applyPrefs();
   if (session && !FIREBASE_CONFIG.apiKey) { session = null; ls.del('session'); }
   loadAll();
-  const id = location.hash.slice(1);
-  cur = SECTIONS.some(s => s.id === id) ? id : 'accueil';
-  markFresh(); renderAll();
+  route(); markFresh(); renderAll();
   initCloud();
   setTimeout(() => safe(tick), 1500);
   setInterval(() => safe(tick), 20000);

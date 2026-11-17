@@ -156,3 +156,13 @@ Le dashboard est une application web installable (téléphone, tablette, ordinat
 - **Fiche de tâche** : cliquez sur le titre d'une tâche pour voir détails, note, échéance, projet et **étapes** (ajouter, cocher, supprimer, barre de progression).
 - **Mode concentration** (◎) : une seule tâche à l'écran, la prochaine étape en évidence et un minuteur (15/25/45/60 min) avec notification de fin.
 - L'assistant IA peut maintenant proposer des étapes pour chaque tâche du planning.
+
+## Pages plein écran (v1.7)
+
+La fiche d'une tâche, le mode concentration et chaque projet s'ouvrent désormais comme une **page** (et non une fenêtre), avec une adresse propre (`#tache/…`, `#projet/…`, `#concentration/…`), un fil d'Ariane et le bouton Précédent du navigateur. `Échap` revient en arrière.
+
+- **Notes** : éditeur de texte riche (titres, gras, italique, listes, cases à cocher, citation, séparateur), enregistrement automatique, collage en texte brut. Le HTML est filtré par liste blanche à l'enregistrement, à l'import et à la synchronisation.
+- **Page de tâche** : titre, priorité, échéance et projet modifiables directement, étapes, notes.
+- **Page de projet** : notes du projet, avancement, ajout rapide de tâches, tâches à faire et terminées.
+- **Concentration** : minuteur, prochaine étape et notes côte à côte.
+- Les anciennes notes texte des tâches sont reprises automatiquement dans le nouvel éditeur.
