@@ -816,7 +816,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '2.3.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '2.3.1', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -2915,6 +2915,9 @@ ACT.gateLocal = () => doLogout();
    sur n'importe quel appareil du compte (téléphone, ordinateur…). Piloter la lecture demande Spotify Premium.
    Sans connexion, un lien Spotify collé s'affiche dans le lecteur intégré. */
 const MUSIC_SUGG = [['Lofi Beats', 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn'], ['Deep Focus', 'https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ']];
+/* Client ID de l'application Spotify « Mon dashboard » : public par conception (PKCE), donc sans risque dans le code. */
+const SP_CLIENT = '9417e9f3821e492495220c75d16f6d85';
+const spCid = () => ls.get('spclient', '') || SP_CLIENT;
 const SP = { st: null, at: 0, n: 0, busy: false };
 let musicOpen = false;
 const spRedirect = () => location.origin + location.pathname;
@@ -2933,7 +2936,7 @@ function spStore(j, old) { ls.set('sp', { access: j.access_token, refresh: j.ref
 async function spToken() {
   const t = ls.get('sp', null); if (!t) return null;
   if (Date.now() < t.exp - 30000) return t.access;
-  try { const j = await spTokenCall({ grant_type: 'refresh_token', refresh_token: t.refresh, client_id: ls.get('spclient', '') }); spStore(j, t); return j.access_token; }
+  try { const j = await spTokenCall({ grant_type: 'refresh_token', refresh_token: t.refresh, client_id: spCid() }); spStore(j, t); return j.access_token; }
   catch (e) { ls.del('sp'); SP.st = null; renderMusic(); return null; }
 }
 async function spApi(method, path) {
@@ -2941,7 +2944,7 @@ async function spApi(method, path) {
   try { return await fetch('https://api.spotify.com/v1' + path, { method, headers: { Authorization: 'Bearer ' + tk } }); } catch (e) { return null; }
 }
 async function spConnect() {
-  const id = ls.get('spclient', '');
+  const id = spCid();
   if (!id) return toast('Collez d’abord votre Client ID Spotify.');
   const v = b64u(crypto.getRandomValues(new Uint8Array(48))), s = b64u(crypto.getRandomValues(new Uint8Array(12)));
   const ch = b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)));
@@ -2954,7 +2957,7 @@ async function spCallback() {
   history.replaceState(null, '', location.pathname + location.hash);
   ls.del('spv'); ls.del('sps');
   if (err || !code || !okState || !v) { if (err || code) toast('Connexion à Spotify annulée ou refusée.'); return; }
-  try { spStore(await spTokenCall({ grant_type: 'authorization_code', code, redirect_uri: spRedirect(), client_id: ls.get('spclient', ''), code_verifier: v })); musicOpen = true; toast('Spotify est connecté.'); renderMusic(); spPoll(); }
+  try { spStore(await spTokenCall({ grant_type: 'authorization_code', code, redirect_uri: spRedirect(), client_id: spCid(), code_verifier: v })); musicOpen = true; toast('Spotify est connecté.'); renderMusic(); spPoll(); }
   catch (e) { toast('Connexion à Spotify impossible : vérifiez le Client ID et l’adresse de redirection.'); }
 }
 const SPI = { prev: '<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M6 5h2.4v14H6zM20 5v14L9.5 12z"/></svg>', next: '<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M15.6 5H18v14h-2.4zM4 5l10.5 7L4 19z"/></svg>', play: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>', pause: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M6 4.5h4.4v15H6zM13.6 4.5H18v15h-4.4z"/></svg>' };
@@ -2976,7 +2979,8 @@ function renderMusic() {
     spPaint(); return;
   }
   el.innerHTML = `<h2>Musique</h2>
-    <details class="sp-connect"${cid ? '' : ' open'}><summary>Connecter mon compte Spotify</summary>
+    <button class="btn primary" data-a="spLogin" type="button" style="width:100%">Connecter mon Spotify</button>
+    <details class="sp-connect" style="margin-top:var(--sp-2)"><summary>Utiliser ma propre application Spotify</summary>
       <ol class="small muted"><li>Sur <b>developer.spotify.com/dashboard</b>, créez une application.</li><li>Adresse de redirection à y saisir :<input type="text" readonly value="${A(spRedirect())}" aria-label="Adresse de redirection"></li><li>Collez ici son <b>Client ID</b> :</li></ol>
       <form data-s="spClient"><input type="text" name="c" placeholder="Client ID" aria-label="Client ID Spotify" value="${A(cid)}" autocomplete="off"><button class="btn sm primary" type="submit">Connecter</button></form>
       <p class="small muted">Piloter la lecture demande Spotify Premium.</p></details>
@@ -3014,6 +3018,7 @@ async function spCmd(method, path) {
 ACT.musicToggle = () => { musicOpen = !musicOpen; renderMusic(); if (musicOpen) spPoll(); };
 ACT.musicPick = d => { ls.set('music', d.u); renderMusic(); };
 ACT.musicClear = () => { ls.del('music'); renderMusic(); };
+ACT.spLogin = () => spConnect();
 ACT.spPrev = () => spCmd('POST', '/me/player/previous');
 ACT.spNext = () => spCmd('POST', '/me/player/next');
 ACT.spToggle = () => spCmd('PUT', SP.st && SP.st.is_playing ? '/me/player/pause' : '/me/player/play');

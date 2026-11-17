@@ -218,3 +218,9 @@ Mise en place (une seule fois) :
 La connexion est directe depuis le navigateur (OAuth PKCE, sans serveur). Client ID et jetons restent sur l'appareil,
 hors synchronisation et hors sauvegardes. Piloter la lecture demande Spotify Premium ; sans connexion, un lien collé
 s'écoute dans le lecteur intégré.
+
+## Version 2.3.1 — Spotify en un clic
+
+Le Client ID de l'application Spotify « Mon dashboard » est intégré au code (il est public par conception avec PKCE) :
+le panneau ♪ propose directement « Connecter mon Spotify », sur chaque appareil, sans rien à coller.
+Un Client ID personnel reste possible dans « Utiliser ma propre application Spotify ».
