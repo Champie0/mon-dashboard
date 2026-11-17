@@ -140,6 +140,7 @@ dialog,.toast,#gate>div{background:var(--sheen),var(--g-3);-webkit-backdrop-filt
 .today-card small{display:block;font-size:12px;color:var(--text-2)}
 .today-card .gauge>span{font-size:11px}
 .side-help{padding:0 8px;font-size:11.5px;color:var(--text-3)}
+.side-ver{padding:4px 8px 0;font-size:10.5px;color:var(--text-3);opacity:.7;font-variant-numeric:tabular-nums}
 
 .main{position:relative;margin-left:calc(var(--sb) + 24px);padding:0 12px 48px 0;min-height:100vh}
 .top{z-index:20;top:12px;margin-top:12px;min-height:54px;border-radius:var(--r-xl);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 10px 8px 20px;box-shadow:var(--hl),var(--hl-lo),0 6px 24px rgba(0,0,0,.16)}
@@ -408,7 +409,7 @@ kbd{display:inline-block;min-width:1.7em;text-align:center;padding:0 6px;border:
   :root{--sb:68px}
   .side{padding:14px 8px}
   .brand{justify-content:center;padding:2px 0 14px}
-  .brand>div,.nb .lb,.nb .no,.side-help,.today-card span{display:none}
+  .brand>div,.nb .lb,.nb .no,.side-help,.side-ver,.today-card span{display:none}
   .nb{justify-content:center;padding:0;height:42px}
   .nb .badge{position:absolute;margin:0;transform:translate(12px,-10px);min-width:16px;height:16px;font-size:10px}
   .today-card{justify-content:center;padding:8px}
@@ -494,6 +495,8 @@ const FIREBASE_CONFIG = {
 const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
+/* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
+const APP_VERSION = '1.2.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -1014,7 +1017,8 @@ function renderNav() {
   $('#nav').innerHTML = SECTIONS.map(s => `<button class="nb" data-a="go" data-id="${s.id}"${s.id === cur ? ' aria-current="page"' : ''} title="${s.label} (touche ${+s.no})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${s.icon}"/></svg><span class="no">${s.no}</span><span class="lb">${s.label}</span>${s.id === 'taches' && late ? `<span class="badge" aria-label="${plural(late, 'tâche en retard', 'tâches en retard')}">${late}</span>` : ''}</button>`).join('');
   const st = dayStats();
   $('#sidefoot').innerHTML = `<button class="today-card" data-a="go" data-id="accueil" title="Voir l’accueil">${ring(st.pct, 44, 4, 'Avancement de la journée : ' + st.pct + ' %')}<span><b>Aujourd’hui</b><small>${st.total ? `${st.td + st.hd} sur ${st.total} fait${st.td + st.hd > 1 ? 's' : ''}` : 'Rien de prévu'}</small></span></button>
-  <p class="side-help">Aide et raccourcis : touche <kbd>?</kbd></p>`;
+  <p class="side-help">Aide et raccourcis : touche <kbd>?</kbd></p>
+  <p class="side-ver" title="Version du dashboard, mise à jour le ${APP_DATE}">v${APP_VERSION}</p>`;
 }
 function renderNotices() {
   let h = '';
@@ -2034,7 +2038,7 @@ VIEWS.reglages = () => {
     ${sw('glass', prefs.glass, 'Verre dépoli', 'Surfaces translucides avec flou d’arrière-plan (Liquid Glass). À désactiver si l’affichage saccade.')}
     ${sw('anim', prefs.anim, 'Animations', 'À désactiver sur un ordinateur peu puissant.')}
     ${sw('glow', prefs.glow, 'Ombres marquées', 'Ombres portées plus profondes au survol des panneaux et des boutons.')}
-    <p class="muted small" style="margin-top:8px">Ces réglages sont mémorisés sur cet appareil.</p></section>
+    <p class="muted small" style="margin-top:8px">Ces réglages sont mémorisés sur cet appareil. Version ${APP_VERSION} (${fmtD(APP_DATE)}).</p></section>
   <section class="hud"><h2>Compte et synchronisation</h2>
     <p class="small" style="margin-bottom:10px">${session ? `Connecté en tant que <b>${esc(session.name)}</b>. Vos données sont enregistrées dans votre compte et se mettent à jour sur tous vos appareils. Sans réseau, vos modifications sont gardées ici puis envoyées dès que la connexion revient.` : 'Mode local : vos données restent dans ce navigateur, sur cet appareil. Connectez-vous avec GitHub pour les retrouver sur tous vos appareils.'}</p>
     <button class="btn" data-a="${session ? 'logout' : 'login'}">${session ? 'Se déconnecter' : 'Se connecter avec GitHub'}</button></section>
