@@ -174,3 +174,7 @@ Dans la page d'un projet, **Nouveau groupe** crée un mini-groupe de tâches (ex
 ## Parcours des objectifs dans les tâches (v1.9)
 
 Les étapes d'un objectif (section Objectifs) peuvent regrouper plusieurs tâches : dans une tâche, le champ **Objectif / étape** relie la tâche à une étape. En haut de la section Tâches, la barre **Parcours des objectifs** (repliable) montre « Étape 1, Étape 2… » avec l'avancement des tâches ; un clic filtre la liste. Une étape se coche toute seule quand toutes ses tâches sont faites (et se rouvre sinon), puis le dashboard propose de cocher l'objectif quand toutes les étapes sont terminées.
+
+## Finition « premium » (v1.10)
+
+Verre plus profond (flou et saturation renforcés, reflets de bord), aurore lente en arrière-plan avec grille fine, reflet lumineux qui suit le curseur sur les cartes, dégradés indigo → cyan sur les boutons, barres et anneaux, typographie plus nette avec micro-étiquettes en police mono. Le mode clair et le mobile suivent, et les animations s'arrêtent avec « réduire les animations ». Tout est dans le bloc CSS « FINITION PREMIUM » : le retirer rétablit l'ancien rendu.
