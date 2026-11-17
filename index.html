@@ -730,7 +730,12 @@ async function initCloud() {
   try {
     const [a, au, fs] = await Promise.all(['app', 'auth', 'firestore'].map(n => import(FIREBASE_SDK + 'firebase-' + n + '.js')));
     const app = a.initializeApp(FIREBASE_CONFIG);
-    cloud = { au, fs, auth: au.getAuth(app), db: fs.getFirestore(app) };
+    /* Stockage de la session : IndexedDB si possible, sinon localStorage, sinon sessionStorage
+       (évite l'erreur « Database is closing/hidden » en navigation privée ou navigateur intégré). */
+    let auth;
+    try { auth = au.initializeAuth(app, { persistence: [au.indexedDBLocalPersistence, au.browserLocalPersistence, au.browserSessionPersistence], popupRedirectResolver: au.browserPopupRedirectResolver }); }
+    catch (e) { console.warn(e); auth = au.getAuth(app); }
+    cloud = { au, fs, auth, db: fs.getFirestore(app) };
     cloudFailed = false;
     au.onAuthStateChanged(cloud.auth, u => safe(() => onAuth(u)));
     /* Retour d'une connexion par redirection (repli quand la fenêtre est bloquée). */
@@ -2078,7 +2083,8 @@ ACT.login = async () => {
   }
 };
 function authFailDlg(e) {
-  infoDlg('Connexion impossible', `<p>${esc(AUTH_ERR[e && e.code] || 'La connexion avec GitHub n’a pas abouti. Réessayez dans un instant.')}</p><p class="muted small" style="margin-top:8px">Code : ${esc((e && e.code) || (e && e.message) || 'inconnu')}</p>`);
+  const idb = e && /Database is closing|IndexedDB|indexedDB/i.test((e.message || '') + (e.code || ''));
+  infoDlg('Connexion impossible', `<p>${esc(AUTH_ERR[e && e.code] || (idb ? 'Le stockage du navigateur est bloqué ou indisponible (navigation privée, mode économie, application intégrée). Ouvrez le site dans une fenêtre de navigation normale, puis réessayez.' : '') || 'La connexion avec GitHub n’a pas abouti. Réessayez dans un instant.')}</p><p class="muted small" style="margin-top:8px">Code : ${esc((e && e.code) || (e && e.message) || 'inconnu')}</p>`);
 }
 ACT.logout = () => {
   if (dirty.size && (!navigator.onLine || !cloud)) return confirmDlg({ title: 'Se déconnecter maintenant ?', msg: 'Des modifications n’ont pas encore été envoyées à votre compte. Elles resteront sur cet appareil et partiront à votre prochaine connexion ici.', ok: 'Se déconnecter', onOk: () => doLogout() });
