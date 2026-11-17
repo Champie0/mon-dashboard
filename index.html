@@ -398,6 +398,23 @@ kbd{display:inline-block;min-width:1.7em;text-align:center;padding:0 6px;border:
 .grp{margin-top:12px;padding:12px 14px;border-radius:var(--r-lg);background:var(--g-1);border:1px solid var(--line)}
 .grp-h{gap:6px}
 .grp a.chip{text-decoration:none}
+.path{padding-bottom:14px}
+.path.closed{padding-bottom:6px}
+.path-goal{margin-top:10px}
+.path-t{background:none;border:0;color:var(--text);font:600 13.5px var(--font-d);padding:4px 8px;margin-left:-8px;border-radius:8px;cursor:pointer}
+.path-t:hover,.path-t.on{background:var(--hover);color:var(--accent)}
+.path-steps{list-style:none;display:flex;gap:6px;overflow-x:auto;padding:6px 2px 4px;margin:0}
+.path-steps li{flex:none}
+.path-s{display:flex;align-items:center;gap:10px;min-width:150px;max-width:250px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--g-1);color:var(--text);cursor:pointer;text-align:left;font:inherit}
+.path-s b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;background:var(--g-2)}
+.path-s span{display:flex;flex-direction:column;font-size:12.5px;font-weight:600;min-width:0}
+.path-s small{font-weight:400;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.path-s em{margin-left:auto;font-style:normal;font-size:12px;color:var(--text-2)}
+.path-s.cur{border-color:var(--accent)}
+.path-s.cur b{background:var(--accent);color:#10121a}
+.path-s.done b{background:var(--accent-soft);color:var(--accent)}
+.path-s.on{background:var(--accent-soft);border-color:var(--accent)}
+.step-chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .grp-done summary{cursor:pointer;margin:8px 0 2px}
 .page-cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:22px;align-items:start}
 .page-side{position:sticky;top:90px}
@@ -569,7 +586,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '1.8.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '1.9.0', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -698,7 +715,7 @@ const NORMALIZE = {
     return {
       v: 1, projects: [...new Set(lines(r.projects, 60))].slice(0, 100), groups: arr(r.groups).filter(g => isObj(g) && str(g.name).trim()).map(g => ({ id: str(g.id, 40) || uid(), name: str(g.name, 60).trim(), project: str(g.project, 60), goal: str(g.goal, 40), asked: !!g.asked })).slice(0, 300), pnotes: Object.fromEntries(Object.entries(isObj(r.pnotes) ? r.pnotes : {}).slice(0, 200).map(([k, v]) => [str(k, 60), cleanDoc(str(v, 60000))]).filter(([k, v]) => k && v)), items: r.items.filter(t => isObj(t) && str(t.title).trim()).map(t => ({
         id: str(t.id, 40) || uid(), title: str(t.title, 300).trim(), prio: ['haute', 'moyenne', 'basse'].includes(t.prio) ? t.prio : 'moyenne',
-        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), group: str(t.group, 40), steps: arr(t.steps).filter(x => isObj(x) && str(x.text).trim()).map(x => ({ id: str(x.id, 40) || uid(), text: str(x.text, 200).trim(), done: !!x.done })).slice(0, 50), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), doc: cleanDoc(str(t.doc, 60000)), done: !!t.done,
+        due: validD(t.due) ? t.due : '', project: str(t.project, 60).trim(), group: str(t.group, 40), goal: str(t.goal, 40), gstep: str(t.gstep, 40), steps: arr(t.steps).filter(x => isObj(x) && str(x.text).trim()).map(x => ({ id: str(x.id, 40) || uid(), text: str(x.text, 200).trim(), done: !!x.done })).slice(0, 50), tags: lines(t.tags, 40).slice(0, 10), note: str(t.note, 5000), doc: cleanDoc(str(t.doc, 60000)), done: !!t.done,
         doneAt: validD(t.doneAt) ? t.doneAt : '', created: validD(t.created) ? t.created : today()
       }))
     };
@@ -723,8 +740,8 @@ const NORMALIZE = {
     return {
       v: 1, items: r.items.filter(g => isObj(g) && str(g.title).trim()).map(g => ({
         id: str(g.id, 40) || uid(), title: str(g.title, 200).trim(), desc: str(g.desc, 3000), due: validD(g.due) ? g.due : '', cat: str(g.cat, 40).trim() || 'Personnel',
-        status: ['active', 'done', 'paused', 'dropped'].includes(g.status) ? g.status : 'active',
-        steps: arr(g.steps).filter(s => isObj(s) && str(s.text).trim()).map(s => ({ id: str(s.id, 40) || uid(), text: str(s.text, 200).trim(), done: !!s.done }))
+        status: ['active', 'done', 'paused', 'dropped'].includes(g.status) ? g.status : 'active', asked: !!g.asked,
+        steps: arr(g.steps).filter(s => isObj(s) && str(s.text).trim()).map(s => ({ id: str(s.id, 40) || uid(), text: str(s.text, 200).trim(), done: !!s.done, auto: !!s.auto }))
       }))
     };
   },
@@ -1296,7 +1313,7 @@ ACT.topPick = () => {
 /* =====================================================================
    2. TÂCHES
    ===================================================================== */
-const TF = { status: 'todo', prio: '', tag: '', project: '', group: 'project', closed: new Set(), period: '', sort: 'due', limit: 150 };
+const TF = { gstep: '', path: ls.get('tfpath', true) !== false, status: 'todo', prio: '', tag: '', project: '', group: 'project', closed: new Set(), period: '', sort: 'due', limit: 150 };
 const PRIO = { haute: 0, moyenne: 1, basse: 2 };
 const taskSort = k => (a, b) => {
   const da = a.due || '9999', db = b.due || '9999', p = PRIO[a.prio] - PRIO[b.prio], d = da < db ? -1 : da > db ? 1 : 0;
@@ -1308,9 +1325,22 @@ function taskRow(t, t0, compact) {
     <button class="chk" role="checkbox" aria-checked="${t.done}" data-a="taskToggle" data-id="${A(t.id)}" aria-label="${t.done ? 'Rouvrir' : 'Terminer'} : ${esc(t.title)}">✓</button>
     <div class="grow"><div class="it-title"><button class="it-open" data-a="taskOpen" data-id="${A(t.id)}" title="Voir la fiche">${esc(t.title)}</button></div><div class="meta"><span class="chip ${t.prio}">Priorité ${t.prio}</span>${(t.steps || []).length ? `<span class="chip">${t.steps.filter(x => x.done).length}/${t.steps.length} étapes</span>` : ''}
       ${t.due ? (late ? `<span class="chip late">En retard · ${esc(fmtShort(t.due))}</span>` : `<span>Échéance : ${esc(relDay(t.due))}</span>`) : ''}
-      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${t.group && !compact ? (() => { const g = (S.tasks.groups || []).find(x => x.id === t.group); return g ? `<span class="chip">▸ ${esc(g.name)}</span>` : ''; })() : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${!compact && docOf(t) ? (() => { const x = docText(docOf(t)); return `<span>Note : ${esc(x.slice(0, 70))}${x.length > 70 ? '…' : ''}</span>`; })() : ''}</div></div>
+      ${t.project && TF.group !== 'project' ? `<span class="chip proj-chip">${esc(t.project)}</span>` : ''}${(() => { const i = stepInfo(t); return i ? `<span class="chip step-chip" title="Objectif : ${A(i.g.title)}">🎯 ${i.s ? `Étape ${i.i + 1} · ${esc(i.s.text)}` : esc(i.g.title)}</span>` : ''; })()}${t.group && !compact ? (() => { const g = (S.tasks.groups || []).find(x => x.id === t.group); return g ? `<span class="chip">▸ ${esc(g.name)}</span>` : ''; })() : ''}${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}${!compact && docOf(t) ? (() => { const x = docText(docOf(t)); return `<span>Note : ${esc(x.slice(0, 70))}${x.length > 70 ? '…' : ''}</span>`; })() : ''}</div></div>
     ${compact ? '' : `${t.done ? '' : `<button class="ic" data-a="focusOpen" data-id="${A(t.id)}" aria-label="Se concentrer sur ${esc(t.title)}" title="Se concentrer">◎</button>`}<button class="ic" data-a="taskEdit" data-id="${A(t.id)}" aria-label="Modifier ${esc(t.title)}" title="Modifier">✎</button><button class="ic" data-a="taskDel" data-id="${A(t.id)}" aria-label="Supprimer ${esc(t.title)}" title="Supprimer">✕</button>`}</li>`;
 }
+/** Barre du parcours : étapes des objectifs, avec filtre au clic. Repliable. */
+function pathHTML() {
+  const gs = S.goals.items.filter(g => g.steps.length && (g.status === 'active' || S.tasks.items.some(t => t.goal === g.id)));
+  if (!gs.length) return '';
+  const act = TF.gstep;
+  return `<section class="hud path${TF.path ? '' : ' closed'}"><div class="row"><button class="proj-toggle" data-a="pathToggle" aria-expanded="${TF.path}"><span class="chev" aria-hidden="true">▾</span>Parcours des objectifs</button><span class="muted small grow">${act ? 'Filtre actif sur la liste ci-dessous' : 'Cliquez une étape pour voir ses tâches'}</span>${act ? '<button class="btn sm ghost" data-a="pathClear">Tout afficher</button>' : ''}</div>
+    ${TF.path ? gs.map(g => { const cur = g.steps.find(x => !x.done); return `<div class="path-goal"><button class="path-t${act === g.id + '|' ? ' on' : ''}" data-a="pathPick" data-k="${A(g.id + '|')}" aria-pressed="${act === g.id + '|'}" title="Toutes les tâches de cet objectif">🎯 ${esc(g.title)}</button>
+      <ol class="path-steps">${g.steps.map((x, i) => { const ts = stepTasks(g.id, x.id), dn = ts.filter(t => t.done).length, key = g.id + '|' + x.id;
+        return `<li><button class="path-s${x.done ? ' done' : ''}${x === cur ? ' cur' : ''}${act === key ? ' on' : ''}" data-a="pathPick" data-k="${A(key)}" aria-pressed="${act === key}"><b>${x.done ? '✓' : i + 1}</b><span>Étape ${i + 1}<small>${esc(x.text)}</small></span><em>${ts.length ? dn + '/' + ts.length : '–'}</em></button></li>`; }).join('')}</ol></div>`; }).join('') : ''}</section>`;
+}
+ACT.pathToggle = () => { TF.path = !TF.path; ls.set('tfpath', TF.path); render(); };
+ACT.pathPick = d => { TF.gstep = TF.gstep === d.k ? '' : d.k; if (TF.gstep) TF.status = 'all'; TF.limit = 150; render(); };
+ACT.pathClear = () => { TF.gstep = ''; render(); };
 const sel = (c, k, v, opts, label) => `<div><label for="s_${c}_${k}">${label}</label><select id="s_${c}_${k}" data-c="${c}" data-k="${k}">${opts.map(([val, lab]) => `<option value="${esc(val)}"${val === v ? ' selected' : ''}>${esc(lab)}</option>`).join('')}</select></div>`;
 const taskProjects = () => [...new Set([...(S.tasks.projects || []), ...S.tasks.items.map(t => t.project).filter(Boolean)])].sort((a, b) => a.localeCompare(b, 'fr'));
 /** Tâches regroupées par projet (repliables), avec avancement ; les projets vides restent visibles. */
@@ -1331,10 +1361,10 @@ VIEWS.taches = () => {
   if (TF.tag && !tags.includes(TF.tag)) TF.tag = '';
   const projects = taskProjects();
   if (TF.project && TF.project !== '-' && !projects.includes(TF.project)) TF.project = '';
-  const list = all.filter(t => (TF.status === 'all' || (TF.status === 'done') === t.done) && (!TF.prio || t.prio === TF.prio) && (!TF.tag || t.tags.includes(TF.tag)) && (!TF.project || (TF.project === '-' ? !t.project : t.project === TF.project)) &&
+  const list = all.filter(t => (TF.status === 'all' || (TF.status === 'done') === t.done) && (!TF.prio || t.prio === TF.prio) && (!TF.tag || t.tags.includes(TF.tag)) && (!TF.project || (TF.project === '-' ? !t.project : t.project === TF.project)) && (!TF.gstep || (() => { const f = linkSplit(TF.gstep); return t.goal === f.goal && (!f.gstep || t.gstep === f.gstep); })()) &&
     (!TF.period || (TF.period === 'today' ? t.due === t0 : TF.period === 'week' ? t.due >= ws && t.due <= we : !t.done && t.due && t.due < t0))).sort(taskSort(TF.sort));
-  const filtered = TF.status !== 'todo' || TF.prio || TF.tag || TF.project || TF.period;
-  return `<section class="hud">
+  const filtered = TF.status !== 'todo' || TF.prio || TF.tag || TF.project || TF.period || TF.gstep;
+  return `${pathHTML()}<section class="hud">
     <form class="row" data-s="taskQuick" style="margin-bottom:14px"><input class="grow" id="quick" type="text" maxlength="300" placeholder="Nouvelle tâche, puis Entrée" aria-label="Titre de la nouvelle tâche" autocomplete="off"><button class="btn primary">Ajouter</button><button type="button" class="btn" data-a="taskNew" title="Raccourci : T">Ajouter avec détails</button><button type="button" class="btn" data-a="projNew">Nouveau projet</button></form>
     <div class="filters">
       ${sel('tf', 'status', TF.status, [['todo', 'À faire'], ['done', 'Terminées'], ['all', 'Toutes']], 'Statut')}
@@ -1363,9 +1393,10 @@ function taskForm(t, defProject) {
     fields: [{ n: 'title', l: 'Titre', req: true, v: t && t.title, max: 300 },
     [{ n: 'prio', l: 'Priorité', t: 'select', v: t ? t.prio : 'moyenne', opts: [['haute', 'Haute'], ['moyenne', 'Moyenne'], ['basse', 'Basse']] }, { n: 'due', l: 'Échéance (optionnelle)', t: 'date', v: t && t.due }],
     { n: 'project', l: 'Projet (optionnel)', v: t ? t.project : (defProject != null ? defProject : (TF.project && TF.project !== '-' ? TF.project : '')), ph: 'Choisir ou créer un projet', max: 60, list: taskProjects() },
+    ...(S.goals.items.length ? [{ n: 'link', l: 'Objectif / étape (optionnel)', t: 'select', v: t ? linkVal(t) : '', opts: linkOpts(t) }] : []),
     { n: 'tags', l: 'Étiquettes, séparées par des virgules', v: t ? t.tags.join(', ') : '', ph: 'maison, travail' }],
     onOk(v) {
-      const data = { title: v.title, prio: v.prio, due: v.due, project: v.project.trim().slice(0, 60), tags: [...new Set(v.tags.split(',').map(x => x.trim().replace(/^#/, '').slice(0, 40)).filter(Boolean))].slice(0, 10) };
+      const data = { title: v.title, prio: v.prio, due: v.due, project: v.project.trim().slice(0, 60), tags: [...new Set(v.tags.split(',').map(x => x.trim().replace(/^#/, '').slice(0, 40)).filter(Boolean))].slice(0, 10), ...('link' in v ? linkSplit(v.link) : {}) };
       if (t) Object.assign(t, data); else S.tasks.items.push({ id: uid(), done: false, doneAt: '', created: today(), steps: [], doc: '', ...data });
       commit('tasks'); toast(t ? 'Tâche modifiée.' : 'Tâche ajoutée.');
     }
@@ -1380,21 +1411,39 @@ ACT.taskToggle = d => { const t = S.tasks.items.find(x => x.id === d.id); if (!t
 const groupsOf = name => (S.tasks.groups || []).filter(g => g.project === name);
 const groupTasks = g => S.tasks.items.filter(t => t.group === g.id && t.project === g.project);
 const goalOfGroup = g => g.goal ? S.goals.items.find(x => x.id === g.goal) : null;
-/** Quand toutes les tâches d'un groupe sont faites, propose de cocher l'objectif lié. */
+/** Tâches reliées à une étape d'objectif. */
+const stepTasks = (gid, sid) => S.tasks.items.filter(t => t.goal === gid && t.gstep === sid);
+/** Étapes cochées/décochées selon leurs tâches, puis propose de cocher le groupe ou l'objectif quand tout est fait. */
 function groupCheck() {
-  let changed = false, ask = null;
+  let ch = false, chG = false, ask = null;
+  for (const g of S.goals.items) for (const st of g.steps) {
+    const ts = stepTasks(g.id, st.id), full = ts.length > 0 && ts.every(t => t.done);
+    if (full && !st.done) { st.done = true; st.auto = true; chG = true; }
+    else if (!full && st.done && st.auto) { st.done = false; st.auto = false; chG = true; }
+  }
+  for (const g of S.goals.items) {
+    const linked = g.steps.length > 0 && g.steps.every(x => x.done) && g.steps.some(st => stepTasks(g.id, st.id).length);
+    if (!linked && g.asked) { g.asked = false; chG = true; }
+    if (linked && g.status === 'active' && !g.asked && !ask) ask = { kind: 'goal', goal: g, g };
+  }
   for (const g of S.tasks.groups || []) {
     const ts = groupTasks(g), full = ts.length > 0 && ts.every(t => t.done);
-    if (!full && g.asked) { g.asked = false; changed = true; }
+    if (!full && g.asked) { g.asked = false; ch = true; }
     const goal = goalOfGroup(g);
-    if (full && goal && goal.status !== 'done' && !g.asked && !ask) ask = { g, goal };
+    if (full && goal && goal.status !== 'done' && !g.asked && !ask) ask = { kind: 'group', g, goal };
   }
   if (ask && $('#dlg').open) { setTimeout(groupCheck, 800); ask = null; }
-  if (ask) { ask.g.asked = true; changed = true; }
-  if (changed) commit('tasks', { silent: true });
-  if (ask) confirmDlg({ title: 'Objectif atteint ?', msg: `Toutes les tâches du groupe « ${ask.g.name} » sont terminées. Cocher l’objectif « ${ask.goal.title} » comme atteint ?`, ok: 'Cocher l’objectif', cancel: 'Pas maintenant',
-    onOk() { const gl = goalOfGroup(ask.g); if (gl) { gl.status = 'done'; commit('goals'); toast('Objectif atteint. Bravo !'); } } });
+  if (ask) { ask.g.asked = true; if (ask.kind === 'goal') chG = true; else ch = true; }
+  if (chG) commit('goals', { silent: true }); if (ch) commit('tasks', { silent: true });
+  if (chG && !$('#dlg').open) render();
+  if (ask) confirmDlg({ title: 'Objectif atteint ?', msg: ask.kind === 'goal' ? `Toutes les étapes de l’objectif « ${ask.goal.title} » sont terminées. Le cocher comme atteint ?` : `Toutes les tâches du groupe « ${ask.g.name} » sont terminées. Cocher l’objectif « ${ask.goal.title} » comme atteint ?`, ok: 'Cocher l’objectif', cancel: 'Pas maintenant',
+    onOk() { const gl = goalOf(ask.goal.id); if (gl) { gl.status = 'done'; commit('goals'); toast('Objectif atteint. Bravo !'); } } });
 }
+/** Choix « objectif › étape » pour relier une tâche. */
+const linkVal = t => t.goal ? t.goal + '|' + (t.gstep || '') : '';
+const linkOpts = t => [['', 'Aucun'], ...S.goals.items.filter(g => g.status !== 'done' || (t && t.goal === g.id)).flatMap(g => [[g.id + '|', g.title], ...g.steps.map((x, i) => [g.id + '|' + x.id, `${g.title} › Étape ${i + 1} : ${x.text}`])])];
+const linkSplit = v => { const [g, st] = String(v || '').split('|'); return { goal: g || '', gstep: g ? (st || '') : '' }; };
+const stepInfo = t => { const g = t.goal && S.goals.items.find(x => x.id === t.goal); if (!g) return null; const i = t.gstep ? g.steps.findIndex(x => x.id === t.gstep) : -1; return { g, i, s: i >= 0 ? g.steps[i] : null }; };
 const goalOpts = cur => [['', 'Aucun objectif'], ...S.goals.items.filter(x => x.status !== 'done' || x.id === cur).map(x => [x.id, x.title])];
 function groupForm(project, g) {
   openForm({ title: g ? 'Modifier le groupe' : 'Nouveau groupe', ok: g ? 'Enregistrer' : 'Créer', note: S.goals.items.length ? '' : 'Astuce : créez d’abord un objectif dans la section Objectifs pour pouvoir le lier à ce groupe.',
@@ -1537,6 +1586,7 @@ function taskPage(t) {
       <label class="prop"><span>Priorité</span><select data-c="tpPrio" data-id="${A(t.id)}">${['haute', 'moyenne', 'basse'].map(p => `<option value="${p}"${t.prio === p ? ' selected' : ''}>${prioL[p]}</option>`).join('')}</select></label>
       <label class="prop"><span>Échéance${late ? ' <b class="late-t">· en retard</b>' : ''}</span><input type="date" data-c="tpDue" data-id="${A(t.id)}" value="${A(t.due)}"></label>
       <label class="prop"><span>Projet</span><input type="text" list="dl_tp" data-c="tpProj" data-id="${A(t.id)}" value="${A(t.project)}" maxlength="60" placeholder="Aucun" autocomplete="off"><datalist id="dl_tp">${taskProjects().map(o => `<option value="${A(o)}">`).join('')}</datalist></label>
+      ${S.goals.items.length ? `<label class="prop"><span>Objectif / étape</span><select data-c="tpLink" data-id="${A(t.id)}" style="max-width:300px">${linkOpts(t).map(([v, l]) => `<option value="${A(v)}"${v === linkVal(t) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}
       ${t.project && groupsOf(t.project).length ? `<label class="prop"><span>Groupe</span><select data-c="tpGroup" data-id="${A(t.id)}"><option value="">Aucun</option>${groupsOf(t.project).map(g => `<option value="${A(g.id)}"${t.group === g.id ? ' selected' : ''}>${esc(g.name)}</option>`).join('')}</select></label>` : ''}
       ${t.tags.length ? `<div class="prop"><span>Étiquettes</span><div class="meta">${t.tags.map(g => `<span class="chip">#${esc(g)}</span>`).join('')}</div></div>` : ''}</div>
     <div class="page-cols"><section class="page-main"><h3 class="td-h" style="margin-top:0">Notes</h3>${edHTML('task', t.id, docOf(t))}</section>
@@ -1598,6 +1648,7 @@ INP.tpTitle = (d, el) => { const t = S.tasks.items.find(x => x.id === d.id), v =
 CH.tpPrio = (d, el) => tdMutate(d.id, t => { t.prio = el.value; });
 CH.tpDue = (d, el) => tdMutate(d.id, t => { t.due = validD(el.value) ? el.value : ''; });
 CH.tpProj = (d, el) => tdMutate(d.id, t => { t.project = el.value.trim().slice(0, 60); if (!groupsOf(t.project).some(g => g.id === t.group)) t.group = ''; });
+CH.tpLink = (d, el) => tdMutate(d.id, t => Object.assign(t, linkSplit(el.value)));
 CH.tpGroup = (d, el) => tdMutate(d.id, t => { t.group = el.value; });
 SUB.projQuick = form => {
   const name = decodeURIComponent(form.dataset.k), v = form.elements.t.value.trim().slice(0, 300); if (!v) return;
@@ -1750,7 +1801,7 @@ function goalCard(g) {
       <div class="meta"><span class="chip${g.status === 'done' ? ' ok' : ''}">${GSTAT[g.status]}</span><span class="chip">${esc(g.cat)}</span>${(S.tasks.groups || []).filter(x => x.goal === g.id).map(x => { const ts = groupTasks(x); return `<a class="chip" href="${A(pageUrl('projet', x.project))}" title="Groupe de tâches lié">▸ ${esc(x.name)} · ${ts.filter(t => t.done).length}/${ts.length}</a>`; }).join('')}${g.due ? (late ? `<span class="chip late">Échéance dépassée · ${esc(fmtShort(g.due))}</span>` : `<span>Échéance : ${esc(fmtD(g.due))}</span>`) : ''}</div></div>
       <button class="ic" data-a="goalEdit" data-id="${A(g.id)}" aria-label="Modifier ${esc(g.title)}" title="Modifier">✎</button><button class="ic" data-a="goalDel" data-id="${A(g.id)}" aria-label="Supprimer ${esc(g.title)}" title="Supprimer">✕</button></div>
     ${g.desc ? `<p class="small" style="margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(g.desc)}</p>` : ''}
-    <ul class="list" style="margin-top:8px">${g.steps.map(s => `<li class="${s.done ? 'done' : ''}"><button class="chk" role="checkbox" aria-checked="${s.done}" data-a="stepToggle" data-id="${A(g.id)}" data-k="${A(s.id)}" aria-label="${esc(s.text)}">✓</button><span class="grow it-title">${esc(s.text)}</span><button class="ic" data-a="stepDel" data-id="${A(g.id)}" data-k="${A(s.id)}" aria-label="Supprimer l’étape ${esc(s.text)}">✕</button></li>`).join('')}</ul>
+    <ul class="list" style="margin-top:8px">${g.steps.map(s => `<li class="${s.done ? 'done' : ''}"><button class="chk" role="checkbox" aria-checked="${s.done}" data-a="stepToggle" data-id="${A(g.id)}" data-k="${A(s.id)}" aria-label="${esc(s.text)}">✓</button><span class="grow it-title">${esc(s.text)}</span>${(() => { const ts = stepTasks(g.id, s.id); return ts.length ? `<button class="btn sm ghost" data-a="stepTasks" data-id="${A(g.id)}" data-k="${A(s.id)}" title="Voir ces tâches">${ts.filter(t => t.done).length}/${ts.length} tâches</button>` : ''; })()}<button class="ic" data-a="stepDel" data-id="${A(g.id)}" data-k="${A(s.id)}" aria-label="Supprimer l’étape ${esc(s.text)}">✕</button></li>`).join('')}</ul>
     ${g.steps.length ? '' : '<p class="muted small" style="margin:8px 0">Découpez cet objectif en étapes : la progression se calcule toute seule.</p>'}
     <form class="row" data-s="stepAdd" data-id="${A(g.id)}" style="margin-top:8px"><input class="grow" type="text" maxlength="200" placeholder="Nouvelle étape" aria-label="Nouvelle étape pour ${esc(g.title)}" autocomplete="off"><button class="btn sm">Ajouter</button>
       <select data-c="goalStatus" data-id="${A(g.id)}" aria-label="État de l’objectif ${esc(g.title)}" style="width:auto;flex:none">${Object.entries(GSTAT).map(([k, l]) => `<option value="${k}"${k === g.status ? ' selected' : ''}>${l}</option>`).join('')}</select></form>
@@ -1792,9 +1843,10 @@ SUB.stepAdd = form => {
 };
 ACT.stepToggle = d => {
   const g = goalOf(d.id), s = g && g.steps.find(x => x.id === d.k); if (!s) return;
-  s.done = !s.done; commit('goals');
+  s.done = !s.done; s.auto = false; commit('goals');
   if (g.status === 'active' && g.steps.every(x => x.done)) toast('Toutes les étapes sont cochées. Vous pouvez marquer l’objectif comme atteint.');
 };
+ACT.stepTasks = d => { TF.gstep = d.id + '|' + d.k; TF.status = 'all'; go('taches'); };
 ACT.stepDel = d => { const g = goalOf(d.id); if (!g) return; g.steps = g.steps.filter(x => x.id !== d.k); commit('goals'); };
 
 /* =====================================================================
