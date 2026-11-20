@@ -837,7 +837,7 @@ const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.17.1/';
 
 const APP_ID = 'mon-dashboard', SCHEMA = 1, LS = 'md:';
 /* Version affichée dans la barre latérale : à augmenter à chaque mise en ligne. */
-const APP_VERSION = '2.5.0', APP_DATE = '2026-11-17';
+const APP_VERSION = '2.5.1', APP_DATE = '2026-11-17';
 const MODULES = ['home', 'tasks', 'habits', 'goals', 'finance', 'journal', 'reminders'];
 const MOD_LABEL = { home: 'Accueil', tasks: 'Tâches', habits: 'Habitudes', goals: 'Objectifs', finance: 'Finances', journal: 'Journal', reminders: 'Rappels' };
 
@@ -3088,9 +3088,14 @@ async function spPoll() {
 setInterval(() => { if (!(musicOpen || $('#homeMusic .sp-dev')) || !ls.get('sp', null)) return; spPaint(); if (++SP.n % 4 === 0) spPoll(); }, 1000);
 async function spCmd(method, path, body) {
   const r = await spApi(method, path, body);
-  if (r && r.status === 403) toast('Spotify Premium est nécessaire pour piloter la lecture d’ici.');
-  else if (r && r.status === 404) toast('Aucun appareil actif : lancez d’abord un titre dans Spotify.');
-  else if (r && !r.ok && r.status !== 204) toast('Spotify n’a pas répondu (' + r.status + ').');
+  if (r && !r.ok && r.status !== 204) {
+    const j = await r.json().catch(() => ({})), e = j && j.error || {}, reason = str(e.reason), msg = str(e.message, 160);
+    if (reason === 'PREMIUM_REQUIRED') toast('Spotify indique que Premium est nécessaire pour cette commande.');
+    else if (r.status === 404 || reason === 'NO_ACTIVE_DEVICE') toast('Aucun appareil actif : lancez d’abord un titre dans Spotify.');
+    else if (r.status === 403 && /restriction violated/i.test(msg)) { /* ex. « pause » alors que c'est déjà en pause : l'état affiché est simplement en retard */ }
+    else if (r.status === 403) toast('Spotify refuse (403)' + (msg ? ' : ' + msg : '') + (reason ? ' [' + reason + ']' : '') + '. Déconnectez puis reconnectez Spotify si cela persiste.');
+    else toast('Spotify n’a pas répondu (' + r.status + (msg ? ' : ' + msg : '') + ').');
+  }
   setTimeout(spPoll, 450);
 }
 ACT.musicToggle = () => { musicOpen = !musicOpen; renderMusic(); if (musicOpen) spPoll(); };

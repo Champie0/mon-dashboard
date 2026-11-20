@@ -242,3 +242,8 @@ Sous la console Spotify : album et année, temps écoulé, genres de l'artiste (
 **DJ IA** : tu demandes (« musique calme pour coder », « même style »…), un modèle gratuit d'OpenRouter (la clé de l'Assistant IA) choisit des titres,
 Spotify les retrouve et les lance ou les ajoute à la file. Commandes possibles : pause, suivant, volume, aléatoire. Seuls des modèles « :free » sont utilisés.
 Limite Spotify : en mode développement, l'API ne fournit plus popularité, ni recommandations ni analyse audio ; le DJ s'appuie donc sur la culture musicale du modèle.
+
+## Version 2.5.1 — messages d'erreur Spotify exacts
+
+Un refus 403 n'est plus systématiquement présenté comme « Premium nécessaire » : le message et la raison renvoyés par Spotify sont lus et affichés
+(« Premium requis » seulement si Spotify le dit ; une commande redondante comme pause sur un titre déjà en pause est ignorée silencieusement).
